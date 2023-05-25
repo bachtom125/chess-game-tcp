@@ -10,6 +10,8 @@
 #include <string.h>
 #include <iostream>
 #include <fstream>
+#include <cctype>
+
 /* codul de eroare returnat de anumite apeluri */
 extern int errno;
 
@@ -129,7 +131,7 @@ int main(int argc, char *argv[])
         }
         cout << msg << endl;
 
-        if (!strstr(msg, "invalid"))
+        if (!strstr(msg, "Invalid"))
         {
             s.resize(100);
             if (read(sd, &s[0], s.size()) < 0)
