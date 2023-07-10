@@ -1,9 +1,10 @@
 #include "ScreenManager.hpp"
 #include <iostream>
 
-ScreenManager::ScreenManager(sf::RenderWindow& window)
+ScreenManager::ScreenManager(sf::RenderWindow& window, TcpClient& tcpClient)
     : window(window),
-    loginScreen(window),
+    tcpClient(tcpClient),
+    loginScreen(window, tcpClient),
     mainMenu(window),
     currentScreen(Screen::Login)
 {
