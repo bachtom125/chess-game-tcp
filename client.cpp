@@ -12,33 +12,115 @@
 #include <fstream>
 #include <cctype>
 
-/* codul de eroare returnat de anumite apeluri */
+/* int board[8][8] =
+{ -1,-2,-3,-4,-5,-3,-2,-1,
+ -6,-6,-6,-6,-6,-6,-6,-6,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  6, 6, 6, 6, 6, 6, 6, 6,
+  1, 2, 3, 4, 5, 3, 2, 1 };*/
+
+/* the error code returned by certain function calls */
 extern int errno;
 
 using namespace std;
 
 /* portul de conectare la server*/
 
-void Convert(char a[9][9], string s)
+void convert(int a[9][9], string s)
 {
     int i, j, k = 0;
     for (i = 1; i <= 8; i++)
     {
         for (j = 1; j <= 8; j++)
-            a[i][j] = s[k++];
+        {
+            switch (s[k++])
+            {
+            case 'p':
+                a[i][j] = 6;
+                break;
+
+            case 'P':
+                a[i][j] = -6;
+                break;
+
+            case 'k':
+                a[i][j] = 5;
+                break;
+
+            case 'K':
+                a[i][j] = -5;
+                break;
+
+            case 'c':
+                a[i][j] = 2;
+                break;
+
+            case 'C':
+                a[i][j] = -2;
+                break;
+
+            case 'r':
+                a[i][j] = 1;
+                break;
+
+            case 'R':
+                a[i][j] = -1;
+                break;
+
+            case 'b':
+                a[i][j] = 3;
+                break;
+
+            case 'B':
+                a[i][j] = -3;
+                break;
+
+            case 'q':
+                a[i][j] = 4;
+                break;
+
+            case 'Q':
+                a[i][j] = -4;
+                break;
+
+            case '-':
+                a[i][j] = 0;
+                break;
+            default:
+                break;
+            }
+        }
+    }
+    for (i = 1; i <= 8; i++)
+    {
+        for (j = 1; j <= 8; j++)
+        {
+            cout << a[i][j] << ' ';
+        }
+        cout << endl;
     }
 }
 
-void Print(char A[9][9])
+void print_board(int A[9][9])
 {
-
     int i, j;
+    string board[10][10];
+    for (i = 1; i <= 8; i++)
+    {
+        for (j = 1; j <= 8; j++)
+        {
+            board[i][j] = to_string(A[i][j]);
+        }
+    }
 
     for (i = 1; i <= 8; i++)
-        A[i][0] = '1' + i - 1; // bordare pe linie
+        board[i][0] = '1' + i - 1; // row id
     for (i = 1; i <= 8; i++)
-        A[9][i] = 'a' + i - 1; // bordare pe coloana
-    A[9][0] = '*';
+        board[9][i] = 'a' + i - 1; // column id
+    board[9][0] = '*';
 
     cout << "==============================================================================" << endl;
 
@@ -46,17 +128,17 @@ void Print(char A[9][9])
     {
         for (j = 0; j <= 8; j++)
             if (j)
-                cout << " | " << A[i][j] << " | "
+                cout << " | " << board[i][j] << " | "
                      << " ";
             else
-                cout << A[i][j] << "     ";
+                cout << board[i][j] << "     ";
         cout << endl;
     }
     cout << "==============================================================================" << endl;
 
     cout << "   *  ";
     for (j = 1; j <= 8; j++)
-        cout << " | " << A[9][j] << " | "
+        cout << " | " << board[9][j] << " | "
              << " ";
     cout << endl;
 }
@@ -93,7 +175,7 @@ int main(int argc, char *argv[])
         return errno;
     }
 
-    char a[9][9];
+    int a[9][9];
 
     int x = 0;
     string s;
@@ -103,8 +185,8 @@ int main(int argc, char *argv[])
         perror("[client]Error at read() from the server.\n");
         return errno;
     }
-    Convert(a, s);
-    Print(a);
+    convert(a, s);
+    print_board(a);
     cout << endl;
 
     while (1)
@@ -139,8 +221,8 @@ int main(int argc, char *argv[])
                 perror("[client]Error in read() from server.\n");
                 return errno;
             }
-            Convert(a, s);
-            Print(a);
+            convert(a, s);
+            print_board(a);
             cout << endl;
         }
     }
