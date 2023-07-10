@@ -1,0 +1,3 @@
+/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build/CMakeFiles/server.dir
+/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build/CMakeFiles/edit_cache.dir
+/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build/CMakeFiles/rebuild_cache.dir

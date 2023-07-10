@@ -2,8 +2,8 @@
 #include <iostream>
 #include <windows.h>
 
-LoginScreen::LoginScreen(sf::RenderWindow& window)
-	: window(window)
+LoginScreen::LoginScreen(sf::RenderWindow& window, TcpClient& tcpClient)
+	: window(window), tcpClient(tcpClient)
 {
 	if (!font.loadFromFile("fonts/inter.ttf")) {
 		// Handle font loading error
@@ -128,7 +128,11 @@ bool LoginScreen::validateLogin(const std::string& username, const std::string& 
 {
 	// Replace this with your actual login validation/authentication logic
 	// For demonstration purposes, let's assume a valid username is "admin" and password is "password"
-	return (username == "admin" && password == "password");
+	json loginRequest;
+	loginRequest["username"] = usernameText.getString();
+	loginRequest["password"] = passwordText.getString();
+	tcpClient.sendRequest(RequestType::Login, loginRequest);
+	return false;
 }
 
 void LoginScreen::displayErrorMessage(const std::string& message)

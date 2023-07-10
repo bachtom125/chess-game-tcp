@@ -1,6 +1,17 @@
 #pragma once
 
 #include <SFML/Network.hpp>
+#include <string>
+#include "nlohmann/json.hpp"
+
+using json = nlohmann::json;
+
+enum class RequestType
+{
+    Login,
+    SomeOtherRequest,
+    // Add more request types as needed
+};
 
 class TcpClient
 {
@@ -10,8 +21,7 @@ public:
     bool connect();
     bool send(const std::string& message);
     bool receive(std::string& receivedData);
-    bool sendLoginRequest(const std::string& username, const std::string& password);
-    
+    bool sendRequest(RequestType type, const json& requestData);
 
 private:
     sf::TcpSocket socket;
