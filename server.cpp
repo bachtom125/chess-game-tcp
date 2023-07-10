@@ -20,17 +20,17 @@ extern int errno;
 char A[9][9];
 int vizA[4] = {0};
 int vizB[4] = {0};
-void CreateTable(char A[9][9])
+void create_table(char A[9][9])
 {
     int i, j;
     for (i = 1; i <= 8; i++)
         for (j = 1; j <= 8; j++)
-            A[i][j] = '-'; // umplu matricea cu -
+            A[i][j] = '-';
 
     for (i = 1; i <= 8; i++)
-        A[i][0] = '1' + i - 1; // bordare pe linie
+        A[i][0] = '1' + i - 1; // row number
     for (i = 1; i <= 8; i++)
-        A[9][i] = 'a' + i - 1; // bordare pe coloana
+        A[9][i] = 'a' + i - 1; // column id
     A[9][0] = '*';
 
     for (j = 1; j <= 8; j++)
@@ -38,25 +38,32 @@ void CreateTable(char A[9][9])
     for (j = 1; j <= 8; j++)
         A[7][j] = 'p';
 
-    // turele
-    A[1][1] = A[1][8] = 'T';
-    A[8][1] = A[8][8] = 't';
+    // rooks
+    A[1][1] = A[1][8] = 'R';
+    A[8][1] = A[8][8] = 'r';
 
-    // cai
+    // knights
     A[1][2] = A[1][7] = 'C';
     A[8][2] = A[8][7] = 'c';
 
-    // nebuni
-    A[1][3] = A[1][6] = 'N';
-    A[8][3] = A[8][6] = 'n';
+    // bishops
+    A[1][3] = A[1][6] = 'B';
+    A[8][3] = A[8][6] = 'b';
 
-    // Regina
+    // queen
     A[1][4] = 'Q';
     A[8][4] = 'q';
 
-    // Rege
+    // king
     A[1][5] = 'K';
     A[8][5] = 'k';
+
+    for (i = 1; i <= 8; i++)
+    {
+        for (j = 1; j <= 8; j++)
+            cout << A[i][j] << ' ';
+        cout << endl;
+    }
 }
 
 struct Player
@@ -65,7 +72,7 @@ struct Player
     int fd;
 };
 
-string Convert(char A[9][9])
+string convert(char A[9][9])
 {
     int i, j;
     string s = "";
@@ -79,8 +86,8 @@ string Convert(char A[9][9])
     return s;
 }
 
-int LC(int sr, int sc, int fr, int fc)
-{ // parcurgerea pieselor pe linii si coloane (N S E V)
+int move_straight_line(int sr, int sc, int fr, int fc)
+{ // move along either row or column (1 only)
     int i, j;
     if (fr > sr && fc == sc)
     {
@@ -126,8 +133,8 @@ int LC(int sr, int sc, int fr, int fc)
         return 0;
 }
 
-int DIAG(int sr, int sc, int fr, int fc)
-{ // parcurgere diagonale NE NV SE SV
+int move_diagonal_line(int sr, int sc, int fr, int fc)
+{ // moving diagonally (long both rows and columns)
     int i, j;
     if (fr > sr && fc > sc)
     {
@@ -173,25 +180,25 @@ int DIAG(int sr, int sc, int fr, int fc)
         return 0;
 }
 
-int bigLetter(char letter)
+int is_white_piece(char letter)
 {
     if (letter >= 'A' && letter <= 'Z')
         return 1;
     return 0;
 }
 
-int smallLetter(char letter)
+int is_black_piece(char letter)
 {
     if (letter >= 'a' && letter <= 'z')
         return 1;
     return 0;
 }
 
-int Pawn(char type, int sr, int sc, int fr, int fc)
+int pawn(char type, int sr, int sc, int fr, int fc)
 {
-    if (bigLetter(type))
+    if (is_white_piece(type))
     {
-        if (bigLetter(A[fr][fc]))
+        if (is_white_piece(A[fr][fc]))
             return 0;
         else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
             return 0; // Outside of matrix
@@ -199,43 +206,43 @@ int Pawn(char type, int sr, int sc, int fr, int fc)
             return 0; // The pawn is not allowed to move backwards.
         else if (fr - sr == 2 && sr == 2 && fc == sc && A[fr][fc] == '-')
         {
-            if (smallLetter(A[fr][fc]))
+            if (is_black_piece(A[fr][fc]))
                 return 0;
             else
                 return 1;
         }
-        else if (fr - sr == 1 && abs(fc - sc) == 1 && (smallLetter(A[fr][fc])))
+        else if (fr - sr == 1 && abs(fc - sc) == 1 && (is_black_piece(A[fr][fc])))
             return 1;
-        else if (fr - sr == 1 && fc == sc && !smallLetter(A[fr][fc]))
+        else if (fr - sr == 1 && fc == sc && !is_black_piece(A[fr][fc]))
             return 1;
     }
-    else if (smallLetter(type))
+    else if (is_black_piece(type))
     {
-        if (smallLetter(A[fr][fc]))
+        if (is_black_piece(A[fr][fc]))
             return 0;
         else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
             return 0; // in afara matricii
         else if (fr >= sr)
-            return 0; // nu are voie Pawnul sa fie dat inapoi
+            return 0; // nu are voie pawnul sa fie dat inapoi
         else if (sr - fr == 2 && sr == 7 && fc == sc && A[fr][fc] == '-')
         {
-            if (bigLetter(A[fr][fc]))
+            if (is_white_piece(A[fr][fc]))
                 return 0;
             else
                 return 1;
         }
-        else if (sr - fr == 1 && abs(fc - sc) == 1 && (bigLetter(A[fr][fc])))
+        else if (sr - fr == 1 && abs(fc - sc) == 1 && (is_white_piece(A[fr][fc])))
             return 1;
-        else if (sr - fr == 1 && fc == sc && !bigLetter(A[fr][fc]))
+        else if (sr - fr == 1 && fc == sc && !is_white_piece(A[fr][fc]))
             return 1;
     }
 }
 
-int Rege(char type, int sr, int sc, int fr, int fc)
+int king(char type, int sr, int sc, int fr, int fc)
 {
-    if (bigLetter(type))
+    if (is_white_piece(type))
     {
-        if (bigLetter(A[fr][fc]))
+        if (is_white_piece(A[fr][fc]))
             return 0;
         else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
             return 0; // in afara matricii
@@ -244,9 +251,9 @@ int Rege(char type, int sr, int sc, int fr, int fc)
         else
             return 0;
     }
-    else if (smallLetter(type))
+    else if (is_black_piece(type))
     {
-        if (smallLetter(A[fr][fc]))
+        if (is_black_piece(A[fr][fc]))
             return 0;
         else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
             return 0; // in afara matricii
@@ -257,11 +264,11 @@ int Rege(char type, int sr, int sc, int fr, int fc)
     }
 }
 
-int Cal(char type, int sr, int sc, int fr, int fc)
+int knight(char type, int sr, int sc, int fr, int fc)
 {
-    if (bigLetter(type))
+    if (is_white_piece(type))
     {
-        if (bigLetter(A[fr][fc]))
+        if (is_white_piece(A[fr][fc]))
             return 0;
         else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
             return 0; // in afara matricii
@@ -270,9 +277,9 @@ int Cal(char type, int sr, int sc, int fr, int fc)
         else
             return 0;
     }
-    else if (smallLetter(type))
+    else if (is_black_piece(type))
     {
-        if (smallLetter(A[fr][fc]))
+        if (is_black_piece(A[fr][fc]))
             return 0;
         else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
             return 0; // in afara matricii
@@ -283,146 +290,146 @@ int Cal(char type, int sr, int sc, int fr, int fc)
     }
 }
 
-int Tura(char type, int sr, int sc, int fr, int fc)
+int rook(char type, int sr, int sc, int fr, int fc)
 {
-    if (bigLetter(type))
+    if (is_white_piece(type))
     {
-        if (bigLetter(A[fr][fc]))
+        if (is_white_piece(A[fr][fc]))
             return 0;
         else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
             return 0; // in afara matricii
-        else if (LC(sr, sc, fr, fc))
+        else if (move_straight_line(sr, sc, fr, fc))
             return 1;
         else
             return 0;
     }
-    else if (smallLetter(type))
+    else if (is_black_piece(type))
     {
-        if (smallLetter(A[fr][fc]))
+        if (is_black_piece(A[fr][fc]))
             return 0;
         else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
             return 0; // in afara matricii
-        else if (LC(sr, sc, fr, fc))
+        else if (move_straight_line(sr, sc, fr, fc))
             return 1;
         else
             return 0;
     }
 }
 
-int Nebun(char type, int sr, int sc, int fr, int fc)
+int bishop(char type, int sr, int sc, int fr, int fc)
 {
-    if (bigLetter(type))
+    if (is_white_piece(type))
     {
-        if (bigLetter(A[fr][fc]))
+        if (is_white_piece(A[fr][fc]))
             return 0;
         else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
             return 0;
-        else if (DIAG(sr, sc, fr, fc))
+        else if (move_diagonal_line(sr, sc, fr, fc))
             return 1;
         else
             return 0;
     }
-    else if (smallLetter(type))
+    else if (is_black_piece(type))
     {
-        if (smallLetter(A[fr][fc]))
+        if (is_black_piece(A[fr][fc]))
             return 0;
         else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
             return 0;
-        else if (DIAG(sr, sc, fr, fc))
+        else if (move_diagonal_line(sr, sc, fr, fc))
             return 1;
         else
             return 0;
     }
 }
 
-int Regina(char type, int sr, int sc, int fr, int fc)
+int queen(char type, int sr, int sc, int fr, int fc)
 {
     int i, j;
-    if (bigLetter(type))
+    if (is_white_piece(type))
     {
-        if (bigLetter(A[fr][fc]))
+        if (is_white_piece(A[fr][fc]))
             return 0;
         else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
             return 0; // in afara matricii
-        else if (DIAG(sr, sc, fr, fc) || LC(sr, sc, fr, fc))
+        else if (move_diagonal_line(sr, sc, fr, fc) || move_straight_line(sr, sc, fr, fc))
             return 1;
         else
             return 0;
     }
-    else if (smallLetter(type))
+    else if (is_black_piece(type))
     {
-        if (smallLetter(A[fr][fc]))
+        if (is_black_piece(A[fr][fc]))
             return 0;
         else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
             return 0; // in afara matricii
-        else if (DIAG(sr, sc, fr, fc) || LC(sr, sc, fr, fc))
+        else if (move_diagonal_line(sr, sc, fr, fc) || move_straight_line(sr, sc, fr, fc))
             return 1;
         else
             return 0;
     }
 }
 
-int validMove(char type, int sr, int sc, int fr, int fc)
+int is_valid_move(char type, int sr, int sc, int fr, int fc)
 {
     switch (type)
     {
     case 'p':
-        if (Pawn(type, sr, sc, fr, fc))
+        if (pawn(type, sr, sc, fr, fc))
             return 1;
         else
             return 0;
     case 'P':
-        if (Pawn(type, sr, sc, fr, fc))
+        if (pawn(type, sr, sc, fr, fc))
             return 1;
         else
             return 0;
     case 'k':
-        if (Rege(type, sr, sc, fr, fc))
+        if (king(type, sr, sc, fr, fc))
             return 1;
         else
             return 0;
     case 'K':
-        if (Rege(type, sr, sc, fr, fc))
+        if (king(type, sr, sc, fr, fc))
             return 1;
         else
             return 0;
     case 'c':
-        if (Cal(type, sr, sc, fr, fc))
+        if (knight(type, sr, sc, fr, fc))
             return 1;
         else
             return 0;
     case 'C':
-        if (Cal(type, sr, sc, fr, fc))
+        if (knight(type, sr, sc, fr, fc))
             return 1;
         else
             return 0;
-    case 't':
-        if (Tura(type, sr, sc, fr, fc))
+    case 'r':
+        if (rook(type, sr, sc, fr, fc))
             return 1;
         else
             return 0;
-    case 'T':
-        if (Tura(type, sr, sc, fr, fc))
+    case 'R':
+        if (rook(type, sr, sc, fr, fc))
             return 1;
         else
             return 0;
-    case 'n':
-        if (Nebun(type, sr, sc, fr, fc))
+    case 'b':
+        if (bishop(type, sr, sc, fr, fc))
             return 1;
         else
             return 0;
-    case 'N':
-        if (Nebun(type, sr, sc, fr, fc))
+    case 'B':
+        if (bishop(type, sr, sc, fr, fc))
             return 1;
         else
             return 0;
     case 'q':
-        if (Regina(type, sr, sc, fr, fc))
+        if (queen(type, sr, sc, fr, fc))
             return 1;
         else
             return 0;
     case 'Q':
-        if (Regina(type, sr, sc, fr, fc))
+        if (queen(type, sr, sc, fr, fc))
             return 1;
         else
             return 0;
@@ -431,7 +438,7 @@ int validMove(char type, int sr, int sc, int fr, int fc)
     }
 }
 
-void findMyKing(char type, int &fr, int &fc)
+void find_my_king(char type, int &fr, int &fc)
 {
     int i, j;
     for (i = 1; i <= 8; i++)
@@ -444,43 +451,43 @@ void findMyKing(char type, int &fr, int &fc)
             }
 }
 
-int isAttacked(char type, int fr, int fc)
+int is_checked(char type, int fr, int fc)
 {
     int i, j;
     if (fr < 1 || fr > 8 || fc < 1 || fc > 8)
         return 0;
-    else if (bigLetter(type))
+    else if (is_white_piece(type))
     {
         for (i = 1; i <= 8; i++)
             for (j = 1; j <= 8; j++)
-                if (smallLetter(A[i][j]))
-                    if (validMove(A[i][j], i, j, fr, fc))
+                if (is_black_piece(A[i][j]))
+                    if (is_valid_move(A[i][j], i, j, fr, fc))
                         return 1;
 
         return 0;
     }
-    else if (smallLetter(type))
+    else if (is_black_piece(type))
     {
         for (i = 1; i <= 8; i++)
             for (j = 1; j <= 8; j++)
-                if (bigLetter(A[i][j]))
-                    if (validMove(A[i][j], i, j, fr, fc))
+                if (is_white_piece(A[i][j]))
+                    if (is_valid_move(A[i][j], i, j, fr, fc))
                         return 1;
 
         return 0;
     }
 }
 
-int Check(char type)
+int check(char type)
 {
     int fr, fc;
-    findMyKing(type, fr, fc);
-    if (isAttacked(type, fr, fc))
+    find_my_king(type, fr, fc);
+    if (is_checked(type, fr, fc))
         return 1;
     return 0;
 }
 
-void Copy(char B[9][9], char A[9][9])
+void copy(char B[9][9], char A[9][9])
 {
     int i, j;
     for (i = 1; i <= 8; i++)
@@ -488,15 +495,15 @@ void Copy(char B[9][9], char A[9][9])
             B[i][j] = A[i][j];
 }
 
-int CheckMate(char type)
+int check_mate(char type)
 {
     const int dir[8] = {0};
     char B[9][9], C[9][9];
-    Copy(B, A);
-    Copy(C, A);
+    copy(B, A);
+    copy(C, A);
     int i, j, fr, fc;
-    findMyKing(type, fr, fc);
-    if (smallLetter(type))
+    find_my_king(type, fr, fc);
+    if (is_black_piece(type))
     {
         if (C[fr - 1][fc] == '-')
             A[fr - 1][fc] = 'K';
@@ -515,7 +522,7 @@ int CheckMate(char type)
         if (C[fr][fc + 1] == '-')
             A[fr][fc + 1] = 'K';
     }
-    else if (bigLetter(type))
+    else if (is_white_piece(type))
     {
         if (C[fr - 1][fc] == '-')
             A[fr - 1][fc] = 'k';
@@ -535,26 +542,26 @@ int CheckMate(char type)
             A[fr][fc + 1] = 'k';
     }
 
-    if (Check(type))
+    if (check(type))
     {
         int nr = 1;
-        if (isAttacked(type, fr - 1, fc) && B[fr - 1][fc] == '-')
+        if (is_checked(type, fr - 1, fc) && B[fr - 1][fc] == '-')
             B[fr - 1][fc] = 'x', nr++;
-        if (isAttacked(type, fr + 1, fc) && B[fr + 1][fc] == '-')
+        if (is_checked(type, fr + 1, fc) && B[fr + 1][fc] == '-')
             B[fr + 1][fc] = 'x', nr++;
-        if (isAttacked(type, fr - 1, fc - 1) && B[fr - 1][fc - 1] == '-')
+        if (is_checked(type, fr - 1, fc - 1) && B[fr - 1][fc - 1] == '-')
             B[fr - 1][fc - 1] = 'x', nr++;
-        if (isAttacked(type, fr - 1, fc + 1) && B[fr - 1][fc + 1] == '-')
+        if (is_checked(type, fr - 1, fc + 1) && B[fr - 1][fc + 1] == '-')
             B[fr - 1][fc + 1] = 'x', nr++;
-        if (isAttacked(type, fr + 1, fc + 1) && B[fr + 1][fc + 1] == '-')
+        if (is_checked(type, fr + 1, fc + 1) && B[fr + 1][fc + 1] == '-')
             B[fr + 1][fc + 1] = 'x', nr++;
-        if (isAttacked(type, fr + 1, fc - 1) && B[fr + 1][fc - 1] == '-')
+        if (is_checked(type, fr + 1, fc - 1) && B[fr + 1][fc - 1] == '-')
             B[fr + 1][fc - 1] = 'x', nr++;
-        if (isAttacked(type, fr, fc - 1) && B[fr][fc - 1] == '-')
+        if (is_checked(type, fr, fc - 1) && B[fr][fc - 1] == '-')
             B[fr][fc - 1] = 'x', nr++;
-        if (isAttacked(type, fr, fc + 1) && B[fr][fc + 1] == '-')
+        if (is_checked(type, fr, fc + 1) && B[fr][fc + 1] == '-')
             B[fr][fc + 1] = 'x', nr++;
-        Copy(A, C);
+        copy(A, C);
         if (B[fr][fc + 1] == '-' || B[fr][fc - 1] == '-' || B[fr + 1][fc - 1] == '-' || B[fr + 1][fc + 1] == '-' || B[fr - 1][fc + 1] == '-' || B[fr - 1][fc - 1] == '-' || B[fr + 1][fc] == '-' ||
             B[fr - 1][fc] == '-')
             return 0;
@@ -564,7 +571,7 @@ int CheckMate(char type)
     return 0;
 }
 
-int Message(int fd, int &verify, char move)
+int message(int fd, int &verify, char move)
 {
     string s;
     char buffer[100];
@@ -617,40 +624,40 @@ int Message(int fd, int &verify, char move)
     // Vizitari piese pentru a verifica daca se poate executa rocada sau nu. Daca piesele au fost mutate rocada nu mai poate avea loc.
     if (type == 'K' && transform != 'F')
         vizA[2] = 1;
-    else if (type == 'T' && sc == 1 && transform != 'F')
+    else if (type == 'R' && sc == 1 && transform != 'F')
         vizA[1] = 1;
-    else if (type == 'T' && sc == 8 && transform != 'F')
+    else if (type == 'R' && sc == 8 && transform != 'F')
         vizA[3] = 1;
     else if (type == 'k' && transform != 'F')
         vizB[2] = 1;
-    else if (type == 't' && sc == 1 && transform != 'F')
+    else if (type == 'r' && sc == 1 && transform != 'F')
         vizB[1] = 1;
-    else if (type == 't' && sc == 8 && transform != 'F')
+    else if (type == 'r' && sc == 8 && transform != 'F')
         vizB[3] = 1;
 
     cout << type << " " << sr << " " << sc << " " << fr << " " << fc << " " << transform << endl;
 
     if (strcmp(msg, "surrender\n") == 0)
         return -1;
-    else if (move == 'a' && CheckMate('K'))
+    else if (move == 'a' && check_mate('K'))
     {
         strcpy(msg, "The winner is player B");
         write(fd, msg, strlen(msg));
         return -1;
     }
-    else if (move == 'b' && CheckMate('k'))
+    else if (move == 'b' && check_mate('k'))
     {
         strcpy(msg, "The winner is player A");
         write(fd, msg, strlen(msg));
         return -1;
     }
-    else if (move == 'a' && smallLetter(type))
+    else if (move == 'a' && is_black_piece(type))
     {
         strcpy(msg, "Invalid move");
         write(fd, msg, strlen(msg));
         return -2;
     }
-    else if (move == 'b' && bigLetter(type))
+    else if (move == 'b' && is_white_piece(type))
     {
         strcpy(msg, "Invalid move");
         write(fd, msg, strlen(msg));
@@ -671,9 +678,9 @@ int Message(int fd, int &verify, char move)
             t1 = A[sr][sc], t2 = A[fr][fc];
             if (sc == 1 && fc == 5)
             {
-                if (bigLetter(t1) && bigLetter(t2))
+                if (is_white_piece(t1) && is_white_piece(t2))
                 {
-                    if (!isAttacked(t1, fr, fc - 1) && !isAttacked(t2, fr, fc - 2))
+                    if (!is_checked(t1, fr, fc - 1) && !is_checked(t2, fr, fc - 2))
                     {
                         if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-' && A[sr][sc + 3] == '-')
                             if (!vizA[1] && !vizA[2])
@@ -691,9 +698,9 @@ int Message(int fd, int &verify, char move)
             }
             else if (sc == 5 && fc == 8)
             {
-                if (bigLetter(t1) && bigLetter(t2))
+                if (is_white_piece(t1) && is_white_piece(t2))
                 {
-                    if (!isAttacked(t1, fr, sc + 1) && !isAttacked(t2, fr, sc + 2))
+                    if (!is_checked(t1, fr, sc + 1) && !is_checked(t2, fr, sc + 2))
                     {
                         if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-')
                             if (!vizA[2] && !vizA[3])
@@ -716,9 +723,9 @@ int Message(int fd, int &verify, char move)
             t1 = A[sr][sc], t2 = A[fr][fc];
             if (sc == 1 && fc == 5)
             {
-                if (smallLetter(t1) && smallLetter(t2))
+                if (is_black_piece(t1) && is_black_piece(t2))
                 {
-                    if (!isAttacked(t1, fr, fc - 1) && !isAttacked(t2, fr, fc - 2))
+                    if (!is_checked(t1, fr, fc - 1) && !is_checked(t2, fr, fc - 2))
                     {
                         if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-' && A[sr][sc + 3] == '-')
                             if (!vizB[1] && !vizB[2])
@@ -736,9 +743,9 @@ int Message(int fd, int &verify, char move)
             }
             else if (sc == 5 && fc == 8)
             {
-                if (smallLetter(t1) && smallLetter(t2))
+                if (is_black_piece(t1) && is_black_piece(t2))
                 {
-                    if (!isAttacked(t1, fr, sc + 1) && !isAttacked(t2, fr, sc + 2))
+                    if (!is_checked(t1, fr, sc + 1) && !is_checked(t2, fr, sc + 2))
                     {
                         if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-')
                             if (!vizB[2] && !vizB[3])
@@ -765,46 +772,46 @@ int Message(int fd, int &verify, char move)
         else if (ok)
         {
             // PrintTable(A);
-            s = Convert(A);
+            s = convert(A);
             write(fd, s.c_str(), s.size());
             cout << "Castling performed!" << endl;
             verify = 1;
             return s.size();
         }
     }
-    else if (!validMove(type, sr, sc, fr, fc))
+    else if (!is_valid_move(type, sr, sc, fr, fc))
     {
         strcpy(msg, "Invalid move");
         write(fd, msg, strlen(msg));
         return -2;
     }
-    else if (validMove(type, sr, sc, fr, fc))
+    else if (is_valid_move(type, sr, sc, fr, fc))
     {
         A[sr][sc] = '-';
         A[fr][fc] = type;
-        if (move == 'a' && Check('K'))
+        if (move == 'a' && check('K'))
         {
-            strcpy(msg, "Invalid move! Check!");
+            strcpy(msg, "Invalid move! check!");
             write(fd, msg, strlen(msg));
             A[sr][sc] = type;
             A[fr][fc] = save;
             return -2;
         }
-        else if (move == 'b' && Check('k'))
+        else if (move == 'b' && check('k'))
         {
-            strcpy(msg, "Invalid move! Check!");
+            strcpy(msg, "Invalid move! check!");
             write(fd, msg, strlen(msg));
             A[sr][sc] = type;
             A[fr][fc] = save;
             return -2;
         }
 
-        // Transformation invalid for Pawn when reaching the enemy's last row.
-        if (type == 'p' && fr == 1 && smallLetter(transform) && (transform == 'n' || transform == 'c' || transform == 'q' || transform == 't'))
+        // Transformation invalid for pawn when reaching the enemy's last row.
+        if (type == 'p' && fr == 1 && is_black_piece(transform) && (transform == 'b' || transform == 'c' || transform == 'q' || transform == 'r'))
             A[sr][sc] = '-', A[fr][fc] = transform;
-        else if (type == 'P' && fr == 8 && bigLetter(transform) && (transform == 'N' || transform == 'C' || transform == 'Q' || transform == 'T'))
+        else if (type == 'P' && fr == 8 && is_white_piece(transform) && (transform == 'B' || transform == 'C' || transform == 'Q' || transform == 'R'))
             A[sr][sc] = '-', A[fr][fc] = transform;
-        else if ((transform != 'n' || transform != 'c' || transform != 'q' || transform != 't' || transform != 'N' || transform != 'C' || transform != 'Q' || transform != 'T') && (type == 'p' || type == 'P'))
+        else if ((transform != 'b' || transform != 'c' || transform != 'q' || transform != 'r' || transform != 'B' || transform != 'C' || transform != 'Q' || transform != 'R') && (type == 'p' || type == 'P'))
         {
             if (fr == 1 || fr == 8)
             {
@@ -814,22 +821,22 @@ int Message(int fd, int &verify, char move)
             }
         }
 
-        if (move == 'a' && Check('k'))
+        if (move == 'a' && check('k'))
         {
-            strcpy(msg, "Move executed! The enemy's king is in Check!");
-            s = Convert(A);
+            strcpy(msg, "Move executed! The enemy's king is in check!");
+            s = convert(A);
             bytes = s.size();
         }
-        else if (move == 'b' && Check('K'))
+        else if (move == 'b' && check('K'))
         {
-            strcpy(msg, "Move executed! The enemy's king is in Check!");
-            s = Convert(A);
+            strcpy(msg, "Move executed! The enemy's king is in check!");
+            s = convert(A);
             bytes = s.size();
         }
         else
         {
             strcpy(msg, "Move executed!");
-            s = Convert(A);
+            s = convert(A);
             bytes = s.size();
         }
 
@@ -972,7 +979,7 @@ int main()
             v[nfds] = 1;
             if ((childpid = fork()) == 0)
             {
-                CreateTable(A);
+                create_table(A);
                 // PrintTable(A);
                 cout << "The game has started!" << endl;
                 Player a;
@@ -994,7 +1001,7 @@ int main()
                             if (!ft)
                             {
                                 string s;
-                                s = Convert(A);
+                                s = convert(A);
                                 int bytes = s.size();
                                 if (bytes && write(fd, s.c_str(), bytes) < 0)
                                 {
@@ -1003,7 +1010,7 @@ int main()
                                 }
                                 ft = 1;
                             }
-                            if (Message(fd, verify, 'a') == -1)
+                            if (message(fd, verify, 'a') == -1)
                             {
                                 close(fd);
                                 FD_CLR(fd, &actfds);
@@ -1027,7 +1034,7 @@ int main()
                         int verify = 0;
                         if (fd != sd)
                         {
-                            if (Message(fd, verify, 'b') == -1)
+                            if (message(fd, verify, 'b') == -1)
                             {
                                 close(fd);
                                 FD_CLR(fd, &actfds);

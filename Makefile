@@ -2,11 +2,11 @@
 
 all: client server
 
-client: client.c
-	g++ client.c -o client
-
-server: server-remake/server.cpp
-	g++ server-remake/server.cpp -o server 
+client: client.cpp
+	g++ client.cpp -o client 
+	
+server: server.cpp
+	g++ server.cpp -o server 
 
 clean: rm -f client server
 
