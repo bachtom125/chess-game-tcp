@@ -119,6 +119,7 @@ void MainMenu::draw()
     window.draw(randomMatchText);
     window.draw(onlineUsersText);
 
+    chessBoardScreen.draw();
 
 }
 

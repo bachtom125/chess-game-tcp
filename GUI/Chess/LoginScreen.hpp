@@ -1,12 +1,13 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include "TcpClient.hpp"
 
 class LoginScreen
 {
 
 public:
-    LoginScreen(sf::RenderWindow& window);
+    LoginScreen(sf::RenderWindow& window,TcpClient& tcpClient);
     bool isLoginSuccessful = false;
 
     void handleEvent(const sf::Event& event);
@@ -15,6 +16,8 @@ public:
 
 private:
     sf::RenderWindow& window;
+    TcpClient& tcpClient; // TcpClient member variable
+
     sf::Font font;
     sf::Text usernameText;
     sf::Text passwordText;

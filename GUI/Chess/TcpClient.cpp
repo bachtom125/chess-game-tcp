@@ -1,5 +1,6 @@
 #include "TcpClient.hpp"
 #include "nlohmann/json.hpp"
+#include <iostream>
 
 using json = nlohmann::json;
 
@@ -41,14 +42,16 @@ bool TcpClient::receive(std::string& receivedData)
     }
 }
 
-
-bool TcpClient::sendLoginRequest(const std::string& username, const std::string& password)
+bool TcpClient::sendRequest(RequestType type, const json& requestData)
 {
-    json loginRequest;
-    loginRequest["username"] = username;
-    loginRequest["password"] = password;
+    // Create the request JSON
+    std::cout << "Request Sent: " << requestData << std::endl;
+    json request;
+    request["type"] = static_cast<int>(type);
+    request["data"] = requestData;
 
-    std::string serializedRequest = loginRequest.dump();
+    // Serialize the request JSON
+    std::string serializedRequest = request.dump();
 
     sf::Packet packet;
     packet << serializedRequest;

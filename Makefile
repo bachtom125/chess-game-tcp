@@ -5,8 +5,8 @@ all: client server
 client: client.c
 	g++ client.c -o client
 
-server: server.c
-	g++ server.c -o server
+server: server-remake/server.cpp
+	g++ server-remake/server.cpp -o server 
 
 clean: rm -f client server
 
