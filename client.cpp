@@ -28,6 +28,7 @@ extern int errno;
 using namespace std;
 
 /* portul de conectare la server*/
+// need to add client receiving results sent by server after the game's over
 
 void convert(int a[9][9], string s)
 {
@@ -94,14 +95,14 @@ void convert(int a[9][9], string s)
             }
         }
     }
-    for (i = 1; i <= 8; i++)
-    {
-        for (j = 1; j <= 8; j++)
-        {
-            cout << a[i][j] << ' ';
-        }
-        cout << endl;
-    }
+    // for (i = 1; i <= 8; i++)
+    // {
+    //     for (j = 1; j <= 8; j++)
+    //     {
+    //         cout << a[i][j] << ' ';
+    //     }
+    //     cout << endl;
+    // }
 }
 
 void print_board(int A[9][9])
@@ -111,9 +112,7 @@ void print_board(int A[9][9])
     for (i = 1; i <= 8; i++)
     {
         for (j = 1; j <= 8; j++)
-        {
             board[i][j] = to_string(A[i][j]);
-        }
     }
 
     for (i = 1; i <= 8; i++)
@@ -145,6 +144,20 @@ void print_board(int A[9][9])
 
 int port;
 
+int menu()
+{
+    int option;
+    cout << endl;
+    cout << "Menu:" << endl;
+    cout << "1. Matchmaking" << endl;
+    cout << "2. Challenge Another Player" << endl;
+    cout << "3. Exit" << endl;
+    cout << "Enter your choice: ";
+    cin >> option;
+
+    return option;
+}
+
 int main(int argc, char *argv[])
 {
     int sd;
@@ -175,56 +188,148 @@ int main(int argc, char *argv[])
         return errno;
     }
 
-    int a[9][9];
-
-    int x = 0;
+    // GUI lets user choose option 1 - 3, the choice will be in 'option'
+    int option, a[9][9], x = 0;
     string s;
-    s.resize(100);
-    if (read(sd, &s[0], s.size()) < 0)
-    {
-        perror("[client]Error at read() from the server.\n");
-        return errno;
-    }
-    convert(a, s);
-    print_board(a);
-    cout << endl;
-
     while (1)
     {
-
-        bzero(msg, 100);
-        printf("[client]Enter your desired move: ");
-        fflush(stdout);
-        read(0, msg, 100);
-
-        if (write(sd, msg, 100) <= 0)
+        int signal;
+        option = menu();
+        if (send(sd, &option, sizeof(option), 0) == -1)
         {
-            perror("[client]Error in write() to server.\n");
-            return errno;
+            cerr << "Error occurred while sending the option to the server." << endl;
+            close(sd);
+            return 1;
         }
 
-        if (strcmp(msg, "surrender\n") == 0)
-            break;
-
-        if (read(sd, msg, 100) < 0)
+        switch (option)
         {
-            perror("[client]Error in read() from server.\n");
-            return errno;
-        }
-        cout << msg << endl;
-
-        if (!strstr(msg, "Invalid"))
-        {
+        case 1:
+            x = 0;
             s.resize(100);
             if (read(sd, &s[0], s.size()) < 0)
             {
-                perror("[client]Error in read() from server.\n");
+                perror("[client]Error at read() from the server.\n");
                 return errno;
             }
             convert(a, s);
             print_board(a);
             cout << endl;
+
+            // Working ...
+            // Need to make client get the existing board right after making a move, so when win can receive the win message
+            while (1)
+            {
+                bzero(msg, 100);
+                printf("[client]Enter your desired move: ");
+                fflush(stdout);
+                read(0, msg, 100);
+
+                if (write(sd, msg, 100) <= 0)
+                {
+                    perror("[client]Error in write() to server.\n");
+                    return errno;
+                }
+
+                // if (strcmp(msg, "surrender\n") == 0)
+                //     break;
+
+                int bytes;
+                bytes = read(sd, msg, 100);
+                if (bytes < 0)
+                {
+                    perror("[client]Error in read() from server.\n");
+                    return errno;
+                }
+
+                msg[bytes] = '\0';
+                cout << "MESSAGE: " << msg << endl;
+                if (strcmp(msg, "winner") == 0)
+                {
+                    cout << "You won!!!" << endl;
+                    break;
+                }
+                if (strcmp(msg, "loser") == 0)
+                {
+                    cout << "You lost!!!" << endl;
+                    break;
+                }
+                if (!strstr(msg, "Invalid"))
+                {
+                    s.resize(100);
+                    if (read(sd, &s[0], s.size()) < 0)
+                    {
+                        perror("[client]Error in read() from server.\n");
+                        return errno;
+                    }
+                    convert(a, s);
+                    print_board(a);
+                    cout << endl;
+                }
+            }
+            break;
+        case 2:
+            cout << "Challenging another player..." << endl;
+            // Add  challenge logic here
+            break;
+        case 3:
+            cout << "Exiting..." << endl;
+            return 0;
+        default:
+            cout << "Invalid choice. Please try again." << endl;
         }
     }
+
+    // The commented code below is for a chess game
+    // int a[9][9];
+
+    // int x = 0;
+    // string s;
+    // s.resize(100);
+    // if (read(sd, &s[0], s.size()) < 0)
+    // {
+    //     perror("[client]Error at read() from the server.\n");
+    //     return errno;
+    // }
+    // convert(a, s);
+    // print_board(a);
+    // cout << endl;
+
+    // while (1)
+    // {
+    //     bzero(msg, 100);
+    //     printf("[client]`your desired move: ");
+    //     fflush(stdout);
+    //     read(0, msg, 100);
+
+    //     if (write(sd, msg, 100) <= 0)
+    //     {
+    //         perror("[client]Error in write() to server.\n");
+    //         return errno;
+    //     }
+
+    //     if (strcmp(msg, "surrender\n") == 0)
+    //         break;
+
+    //     if (read(sd, msg, 100) < 0)
+    //     {
+    //         perror("[client]Error in read() from server.\n");
+    //         return errno;
+    //     }
+    //     cout << msg << endl;
+
+    //     if (!strstr(msg, "Invalid"))
+    //     {
+    //         s.resize(100);
+    //         if (read(sd, &s[0], s.size()) < 0)
+    //         {
+    //             perror("[client]Error in read() from server.\n");
+    //             return errno;
+    //         }
+    //         convert(a, s);
+    //         print_board(a);
+    //         cout << endl;
+    //     }
+    // }
     close(sd);
 }
