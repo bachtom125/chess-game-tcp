@@ -604,7 +604,7 @@ int check_mate(char A[9][9], char type)
 void send_result(int loser_fd, int winner_fd)
 {
     char msg[100];
-    strcpy(msg, "`");
+    strcpy(msg, "winner");
     if (write(winner_fd, msg, strlen(msg)) < 0)
     {
         cerr << "Error occurred while sending message to the Winner." << endl;
@@ -1035,6 +1035,7 @@ int main()
             pthread_create(&tid, NULL, &play_game, &game_data);
         }
     }
+    close(sd);
 }
 
 // Thread function for the matchmaking system
@@ -1095,6 +1096,7 @@ void *play_game(void *arg)
     b.round = 0;
 
     int ft = 0, current_fd;
+    // Working ... need to constantly check surrender message from both players
     while (1)
     {
         if (a.round == 1)
@@ -1160,8 +1162,8 @@ void *play_game(void *arg)
         }
     }
     // game finished, make them free
-    a.free = 1;
-    b.free = 1;
+    data->player_a->free = 1;
+    data->player_b->free = 1;
 
     int *result = new int(42);
     pthread_exit(result);
@@ -1186,15 +1188,17 @@ void *client_operation(void *arg)
 
     while (1)
     {
-        while (1)
-        {
-            if (this_player->free == 1)
-                break;
-        }
+        // while (1)
+        // {
+        //     if (this_player->free == 1)
+        //         break;
+        // }
+        cout << "waiting for " << client_fd << " to choose an option" << endl;
         int option;
+        string temp;
         if (recv(client_fd, &option, sizeof(option), 0) <= 0)
         {
-            cout << "Error occurred while receiving option from the client." << endl;
+            cout << "Error occurred while receiving option from client " << client_fd << endl;
             close(client_fd);
         }
         cout << "Client with fd " << client_fd << " chose " << option << endl;
@@ -1205,6 +1209,11 @@ void *client_operation(void *arg)
 
             match_making_players.push(this_player);
             this_player->free = 0;
+            while (1)
+            {
+                if (this_player->free == 1)
+                    break;
+            }
             break;
         case 2: // Play a friend
             break;
