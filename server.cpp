@@ -51,9 +51,30 @@ void remove_player_from_matchmaking()
     // Working
 }
 
-void remove_player_from_online()
+void disconnect_player(int fd)
 {
-    // Working
+    auto it = online_players.begin();
+    while (it != online_players.end())
+    {
+        if ((*it).fd == fd)
+            break;
+
+        it++;
+    }
+
+    if (it != online_players.end())
+    {
+        online_players.erase(it);
+        cout << "Player " << fd << " disconnected!" << endl;
+    }
+    else
+    {
+        cout << "Player " << fd << " not found in online player vector list" << endl;
+    }
+    FD_CLR(fd, &actfds);
+    FD_CLR(fd, &readfds);
+    close(fd);
+    v[fd] = 0;
 }
 
 void create_table(char A[9][9])
@@ -631,7 +652,7 @@ int message(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, int
         perror("Error in read() from the client.\n");
         return 0;
     }
-
+    cout << fd << " said " << msg << endl;
     int sr, sc, dr, dc;
     char type, c1, c2, transform;
     strcpy(msgrasp, msg);
@@ -681,7 +702,7 @@ int message(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, int
     else if (type == 'r' && sc == 8 && transform != 'F')
         vizB[3] = 1;
 
-    cout << type << " " << sr << " " << sc << " " << dr << " " << dc << " " << transform << endl;
+    // cout << type << " " << sr << " " << sc << " " << dr << " " << dc << " " << transform << endl;
 
     if (strcmp(msg, "surrender\n") == 0)
     {
@@ -891,8 +912,8 @@ int message(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, int
 
         // PrintTable(A);
 
-        cout << type << " It was moved from position " << c1 << " " << sr << " to position " << c2 << " " << dr << endl;
-        cout << "Waiting for the other player's move!" << endl;
+        // cout << type << " It was moved from position " << c1 << " " << sr << " to position " << c2 << " " << dr << endl;
+        // cout << "Waiting for the other player's move!" << endl;
 
         if (bytes && write(opponent_fd, s.c_str(), bytes) < 0)
         {
@@ -921,6 +942,26 @@ char *conv_addr(struct sockaddr_in address)
     sprintf(port, ":%d", ntohs(address.sin_port));
     strcat(str, port);
     return (str);
+}
+
+void print_server_state()
+{
+    queue<Player *> match_making_temp = match_making_players;
+
+    cout << "Match Making Players ";
+    while (match_making_temp.empty() != 1)
+    {
+        Player *player = match_making_temp.front();
+        cout << (*player).fd << '-' << (*player).free << ' ';
+        match_making_temp.pop();
+    }
+    cout << endl;
+
+    vector<Player> temp = online_players;
+    cout << "Players online ";
+    for (Player i : temp)
+        cout << i.fd << ' ';
+    cout << endl;
 }
 
 int main()
@@ -1024,7 +1065,7 @@ int main()
             // player_a->free = 0;
             // player_b->free = 0;
 
-            cout << "The size now is " << match_making_players.size() << endl;
+            // cout << "The size now is " << match_making_players.() << endl;
 
             // thread for managing game play
             PlayGameThreadData game_data;
@@ -1086,22 +1127,23 @@ void *play_game(void *arg)
     int vizA[4] = {0};
     int vizB[4] = {0};
 
-    PlayGameThreadData *data = static_cast<PlayGameThreadData *>(arg);
+    PlayGameThreadData *data = (PlayGameThreadData *)arg;
 
-    Player a = *(data->player_a);
-    Player b = *(data->player_b);
+    Player *a = (data->player_a);
+    Player(*b) = (data->player_b);
     create_table(A);
-    cout << "The game has started between " << a.fd << " and " << b.fd << endl;
-    a.round = 1;
-    b.round = 0;
+    (*a).round = 1;
+    (*b).round = 0;
 
     int ft = 0, current_fd;
     // Working ... need to constantly check surrender message from both players
     while (1)
     {
-        if (a.round == 1)
+        cout << "Game between " << (*a).fd << " and " << (*b).fd << endl;
+
+        if ((*a).round == 1)
         {
-            current_fd = a.fd;
+            current_fd = (*a).fd;
             int verify = 0;
 
             if (!ft)
@@ -1116,7 +1158,7 @@ void *play_game(void *arg)
                 }
                 ft = 1;
             }
-            if (message(A, vizA, vizB, current_fd, b.fd, verify, 'a') == -1)
+            if (message(A, vizA, vizB, current_fd, (*b).fd, verify, 'a') == -1)
             {
                 // close(current_fd);
                 // // Working ...
@@ -1126,21 +1168,20 @@ void *play_game(void *arg)
                 // v[a.fd] = 0;
                 // v[b.fd] = 0;
                 // exit(0);
-
                 break;
             }
             else if (verify == 1)
             {
-                a.round = 0;
-                b.round = 1;
+                (*a).round = 0;
+                (*b).round = 1;
                 verify = 0;
             }
         }
-        if (b.round == 1)
+        if ((*b).round == 1)
         {
-            current_fd = b.fd;
+            current_fd = (*b).fd;
             int verify = 0;
-            if (message(A, vizA, vizB, current_fd, a.fd, verify, 'b') == -1)
+            if (message(A, vizA, vizB, current_fd, (*a).fd, verify, 'b') == -1)
             {
                 // // Working ...
                 // close(current_fd);
@@ -1150,21 +1191,20 @@ void *play_game(void *arg)
                 // v[a.fd] = 0;
                 // v[b.fd] = 0;
                 // exit(0);
-
                 break;
             }
             else if (verify == 1)
             {
-                b.round = 0;
-                a.round = 1;
+                (*b).round = 0;
+                (*a).round = 1;
                 verify = 0;
             }
         }
     }
     // game finished, make them free
-    data->player_a->free = 1;
-    data->player_b->free = 1;
-
+    a->free = 1;
+    b->free = 1;
+    cout << a->fd << " and " << b->fd << " are free " << endl;
     int *result = new int(42);
     pthread_exit(result);
 }
@@ -1186,13 +1226,9 @@ void *client_operation(void *arg)
         }
     }
 
-    while (1)
+    int connected = 1;
+    while (connected)
     {
-        // while (1)
-        // {
-        //     if (this_player->free == 1)
-        //         break;
-        // }
         cout << "waiting for " << client_fd << " to choose an option" << endl;
         int option;
         string temp;
@@ -1202,11 +1238,11 @@ void *client_operation(void *arg)
             close(client_fd);
         }
         cout << "Client with fd " << client_fd << " chose " << option << endl;
+        print_server_state();
 
         switch (option)
         {
         case 1: // Random matchmaking:
-
             match_making_players.push(this_player);
             this_player->free = 0;
             while (1)
@@ -1218,6 +1254,9 @@ void *client_operation(void *arg)
         case 2: // Play a friend
             break;
         case 3: // Challenge a friend
+            cout << "Got here" << endl;
+            disconnect_player(client_fd);
+            connected = 0;
             break;
         default:
             break;
