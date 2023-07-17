@@ -11,9 +11,9 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/3.22.1/CMakeCCompiler.cmake"
   "CMakeFiles/3.22.1/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.22.1/CMakeSystem.cmake"
-  "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/json-develop/json-develop/build/nlohmann_jsonConfig.cmake"
-  "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/json-develop/json-develop/build/nlohmann_jsonConfigVersion.cmake"
-  "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/json-develop/json-develop/build/nlohmann_jsonTargets.cmake"
+  "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/json-develop/build/nlohmann_jsonConfig.cmake"
+  "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/json-develop/build/nlohmann_jsonConfigVersion.cmake"
+  "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/json-develop/build/nlohmann_jsonTargets.cmake"
   "/usr/share/cmake-3.22/Modules/CMakeCInformation.cmake"
   "/usr/share/cmake-3.22/Modules/CMakeCXXInformation.cmake"
   "/usr/share/cmake-3.22/Modules/CMakeCommonLanguageInclude.cmake"
@@ -49,4 +49,5 @@ set(CMAKE_MAKEFILE_PRODUCTS
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/server.dir/DependInfo.cmake"
+  "CMakeFiles/client.dir/DependInfo.cmake"
   )
