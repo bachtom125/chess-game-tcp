@@ -15,12 +15,25 @@
 #include <vector>
 #include <queue>
 #include <mutex>
+#include <nlohmann/json.hpp>
+#include <fstream> // Add this line
 #include <condition_variable>
 
 #define PORT 3000
+#define BUFF_SIZE 1024
 using namespace std;
+using json = nlohmann::json;
 
 extern int errno;
+
+enum class RequestType
+{
+    Login,
+    Move,
+    SomeOtherRequest,
+    // Add more request types as needed
+};
+
 struct Player
 {
     int round;
@@ -75,6 +88,51 @@ void disconnect_player(int fd)
     FD_CLR(fd, &readfds);
     close(fd);
     v[fd] = 0;
+}
+
+json convert_to_json(string buffer, int bytes)
+{
+    // handle before calling ...
+    // std::array<char, 1024> buffer{};
+    // ssize_t bytes = recv(clientSocket, buffer, buffer.size(), 0);
+    // if (bytes <= 0)
+    // {
+    //     std::cerr << "Error receiving data" << std::endl;
+    //     close(clientSocket);
+    //     continue;
+    // }
+    // Parse the received data into JSON
+    // string request_data(buffer, bytes);
+    string request_data = buffer;
+    cout << request_data << endl;
+    // Find the position of the first opening brace '{'
+    size_t bracePos = request_data.find_first_of('{');
+
+    // Extract the substring from the brace position until the end of the string
+    string jsonSubstring = request_data.substr(bracePos);
+
+    // Parse the extracted JSON substring
+    json json_data = json::parse(jsonSubstring);
+
+    // Determine the type of request and dispatch to the appropriate handler
+    int requestType = json_data["type"];
+
+    // if (requestType == static_cast<int>(RequestType::Login))
+    // {
+    //     cout << "Received login request" << endl;
+    //     handleLoginRequest(json_data["data"], clientSocket);
+    // }
+    // else if (requestType == static_cast<int>(RequestType::SomeOtherRequest))
+    // {
+    //     cout << "Received some other request" << endl;
+    //     handleSomeOtherRequest(json_data["data"]);
+    // }
+    // else
+    // {
+    //     // Handle unknown or unsupported request types
+    //     cerr << "Unknown request type: " << requestType << endl;
+    // }
+    return json_data;
 }
 
 void create_table(char A[9][9])
@@ -624,7 +682,7 @@ int check_mate(char A[9][9], char type)
 
 void send_result(int loser_fd, int winner_fd)
 {
-    char msg[100];
+    char msg[BUFF_SIZE];
     strcpy(msg, "winner");
     if (write(winner_fd, msg, strlen(msg)) < 0)
     {
@@ -641,18 +699,33 @@ void send_result(int loser_fd, int winner_fd)
 int message(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, int &verify, char move)
 {
     string s;
-    char buffer[100];
+    char buffer[BUFF_SIZE];
     int bytes;
-    char msg[100], save;
-    char msgrasp[100] = " ";
+    char save;
+    char msg[BUFF_SIZE];
+    char msgrasp[BUFF_SIZE] = " ";
 
-    bytes = read(fd, msg, sizeof(buffer));
+    bytes = read(fd, buffer, sizeof(buffer));
     if (bytes < 0)
     {
         perror("Error in read() from the client.\n");
         return 0;
     }
+    // // testing begin
+    // cout << "buffer: " << buffer << endl;
+    // return 1;
+    // // testing end
+    json json_data = convert_to_json(buffer, bytes);
+    const json &request_data = json_data["data"];
+    string msg_received = request_data["move"];
+
+    // Copy string to char array
+    strncpy(msg, msg_received.c_str(), sizeof(msg) - 1);
+    msg[sizeof(msg) - 1] = '\0'; // Ensure null-termination
+
+    // const char *msg = msg_received.c_str();
     cout << fd << " said " << msg << endl;
+
     int sr, sc, dr, dc;
     char type, c1, c2, transform;
     strcpy(msgrasp, msg);

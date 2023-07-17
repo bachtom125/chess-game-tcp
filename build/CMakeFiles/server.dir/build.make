@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master"
+CMAKE_SOURCE_DIR = "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build"
+CMAKE_BINARY_DIR = "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build"
 
 # Include any dependencies generated for this target.
 include CMakeFiles/server.dir/depend.make
@@ -69,31 +69,31 @@ include CMakeFiles/server.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/server.dir/flags.make
 
-CMakeFiles/server.dir/server-remake/server.cpp.o: CMakeFiles/server.dir/flags.make
-CMakeFiles/server.dir/server-remake/server.cpp.o: ../server-remake/server.cpp
-CMakeFiles/server.dir/server-remake/server.cpp.o: CMakeFiles/server.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir="/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/server.dir/server-remake/server.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/server.dir/server-remake/server.cpp.o -MF CMakeFiles/server.dir/server-remake/server.cpp.o.d -o CMakeFiles/server.dir/server-remake/server.cpp.o -c "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/server-remake/server.cpp"
+CMakeFiles/server.dir/server.cpp.o: CMakeFiles/server.dir/flags.make
+CMakeFiles/server.dir/server.cpp.o: ../server.cpp
+CMakeFiles/server.dir/server.cpp.o: CMakeFiles/server.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir="/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/server.dir/server.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/server.dir/server.cpp.o -MF CMakeFiles/server.dir/server.cpp.o.d -o CMakeFiles/server.dir/server.cpp.o -c "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/server.cpp"
 
-CMakeFiles/server.dir/server-remake/server.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/server.dir/server-remake/server.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/server-remake/server.cpp" > CMakeFiles/server.dir/server-remake/server.cpp.i
+CMakeFiles/server.dir/server.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/server.dir/server.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/server.cpp" > CMakeFiles/server.dir/server.cpp.i
 
-CMakeFiles/server.dir/server-remake/server.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/server.dir/server-remake/server.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/server-remake/server.cpp" -o CMakeFiles/server.dir/server-remake/server.cpp.s
+CMakeFiles/server.dir/server.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/server.dir/server.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/server.cpp" -o CMakeFiles/server.dir/server.cpp.s
 
 # Object files for target server
 server_OBJECTS = \
-"CMakeFiles/server.dir/server-remake/server.cpp.o"
+"CMakeFiles/server.dir/server.cpp.o"
 
 # External object files for target server
 server_EXTERNAL_OBJECTS =
 
-server: CMakeFiles/server.dir/server-remake/server.cpp.o
+server: CMakeFiles/server.dir/server.cpp.o
 server: CMakeFiles/server.dir/build.make
 server: CMakeFiles/server.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir="/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable server"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir="/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable server"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/server.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -105,6 +105,6 @@ CMakeFiles/server.dir/clean:
 .PHONY : CMakeFiles/server.dir/clean
 
 CMakeFiles/server.dir/depend:
-	cd "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master" "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master" "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build" "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build" "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build/CMakeFiles/server.dir/DependInfo.cmake" --color=$(COLOR)
+	cd "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp" "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp" "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build" "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build" "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build/CMakeFiles/server.dir/DependInfo.cmake" --color=$(COLOR)
 .PHONY : CMakeFiles/server.dir/depend
 
