@@ -132,7 +132,7 @@ bool LoginScreen::validateLogin(const std::string& username, const std::string& 
 	loginRequest["username"] = usernameText.getString();
 	loginRequest["password"] = passwordText.getString();
 	tcpClient.sendRequest(RequestType::Login, loginRequest);
-	return false;
+	return true;
 }
 
 void LoginScreen::displayErrorMessage(const std::string& message)

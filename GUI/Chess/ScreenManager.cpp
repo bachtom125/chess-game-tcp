@@ -6,6 +6,7 @@ ScreenManager::ScreenManager(sf::RenderWindow& window, TcpClient& tcpClient)
     tcpClient(tcpClient),
     loginScreen(window, tcpClient),
     mainMenu(window),
+    chessBoardScreen(window),
     currentScreen(Screen::Login)
 {
 }
@@ -43,6 +44,9 @@ void ScreenManager::handleEvents()
         {
             mainMenu.handleEvent(event);
         }
+        else if (currentScreen == Screen::ChessBoardScreen) {
+            chessBoardScreen.handleEvent(event);
+        }
     }
 }
 
@@ -60,6 +64,12 @@ void ScreenManager::update()
     else if (currentScreen == Screen::MainMenu)
     {
         mainMenu.update();
+        if(mainMenu.activeScreen == Screen::ChessBoardScreen) {
+            currentScreen = Screen::ChessBoardScreen;
+        }
+    }
+    else if (currentScreen == Screen::ChessBoardScreen) {
+        chessBoardScreen.update();
     }
 }
 
@@ -74,5 +84,9 @@ void ScreenManager::draw()
     {
         mainMenu.draw();
     }
+    else if (currentScreen == Screen::ChessBoardScreen) {
+        chessBoardScreen.draw();
+    }
+
     window.display();
 }

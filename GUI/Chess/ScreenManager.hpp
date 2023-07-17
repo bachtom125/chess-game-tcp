@@ -4,12 +4,14 @@
 #include "LoginScreen.hpp"
 #include "MainMenu.hpp"
 #include "TcpClient.hpp"
+#include "ChessBoardScreen.hpp"
 
 
 enum class Screen
 {
     Login,
-    MainMenu
+    MainMenu,
+    ChessBoardScreen
 };
 
 class ScreenManager
@@ -28,5 +30,6 @@ private:
     TcpClient& tcpClient;
     LoginScreen loginScreen;
     MainMenu mainMenu;
+    ChessBoardScreen chessBoardScreen;
     Screen currentScreen;
 };
