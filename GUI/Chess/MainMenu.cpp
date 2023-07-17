@@ -1,9 +1,8 @@
 #include "MainMenu.hpp"
 #include <iostream>
-
+#include "ScreenManager.hpp"
 MainMenu::MainMenu(sf::RenderWindow& window)
-    : window(window),
-    chessBoardScreen(window)
+    : window(window)
 {
     if (!font.loadFromFile("fonts/inter.ttf")) {
         // Handle font loading error
@@ -89,13 +88,13 @@ void MainMenu::handleEvent(const sf::Event& event)
         onlineUsersText.setFillColor(defaultTextColor);
     }
 
-    chessBoardScreen.handleEvent(event);
 }
 
 void MainMenu::update()
 {
     if (currentOption == Option_Challenger) {
         // Perform actions specific to the "Challenger" option
+        activeScreen = Screen::ChessBoardScreen;
     }
     else if (currentOption == Option_RandomMatch) {
         // Perform actions specific to the "Random Match" option
@@ -104,7 +103,6 @@ void MainMenu::update()
         // Perform actions specific to the "Online Users" option
     }
 
-    chessBoardScreen.update();
 }
 
 void MainMenu::draw()
@@ -119,7 +117,6 @@ void MainMenu::draw()
     window.draw(randomMatchText);
     window.draw(onlineUsersText);
 
-    chessBoardScreen.draw();
 
 }
 

@@ -1,7 +1,8 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
-#include "ChessBoardScreen.hpp"
+
+enum class Screen;
 
 enum MainMenuOption
 {
@@ -18,11 +19,12 @@ public:
     void handleEvent(const sf::Event& event);
     void update();
     void draw();
+    Screen activeScreen;
+
 
 private:
     sf::RenderWindow& window;
-    ChessBoardScreen chessBoardScreen;
-    MainMenuOption currentOption = Option_Challenger;
+    MainMenuOption currentOption;
 
     sf::Font font;
     sf::Text titleText;
