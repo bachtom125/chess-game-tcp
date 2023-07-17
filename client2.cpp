@@ -11,15 +11,27 @@
 #include <iostream>
 #include <fstream>
 #include <cctype>
+#include <sys/time.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <limits>
+/* int board[8][8] =
+{ -1,-2,-3,-4,-5,-3,-2,-1,
+ -6,-6,-6,-6,-6,-6,-6,-6,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  6, 6, 6, 6, 6, 6, 6, 6,
+  1, 2, 3, 4, 5, 3, 2, 1 };*/
 
 /* the error code returned by certain function calls */
 extern int errno;
 
 using namespace std;
 
-/* portul de conectare la server*/
 // need to add client receiving results sent by server after the game's over
-
+bool in_game = 0;
 void convert(int a[9][9], string s)
 {
     int i, j, k = 0;
@@ -143,39 +155,108 @@ int menu()
     cout << "2. Challenge Another Player" << endl;
     cout << "3. Exit" << endl;
     cout << "Enter your choice: ";
+    fflush(stdin);
     cin >> option;
-
+    cout << "CHOSE" << option << "SDSD" << endl;
     return option;
 }
 
-void *communication_thread(void *arg) // for now, for handling surrenders request only, can be updated for communication overall
+void *send_game_data(void *arg)
 {
-    while (true)
+    int sd = *((int *)arg);
+    char msg[100];
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(STDIN_FILENO, &readfds);
+
+    // Set the timeout to 0 for non-blocking check
+    timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 0;
+
+    while (in_game)
     {
+        // Perform the select
+        // int activity = select(1, &readfds, nullptr, nullptr, &timeout);
 
-        if (surrenderRequested)
+        // Data available in stdin, read and write to the server
+        int bytes = read(0, msg, 100);
+        msg[bytes] = '\0';
+        if (write(sd, msg, 100) <= 0)
         {
-            lock_guard<mutex> lock(mtx);
-            // Handle surrender request in the main game logic
-            cout << "Surrender requested by the other player!" << endl;
+            perror("[client]Error in write() to server.\n");
+            break;
         }
-
-        // Send messages to the other player
-        // ...
-
-        // Sleep for a while to avoid excessive CPU usage
-        this_thread::sleep_for(chrono::milliseconds(100));
+        cout << "JUST WROTE" << msg << endl;
     }
 
     int *result = new int(42);
-    pthread_exit(result);
+    pthread_exit(nullptr);
+}
+
+void *receive_game_data(void *arg)
+{
+    int sd = *((int *)arg);
+
+    int a[9][9];
+    string s;
+
+    int bytes;
+    char msg[500];
+    while (in_game)
+    {
+        bytes = read(sd, msg, 500);
+        if (bytes < 0)
+        {
+            perror("[client]Error in read() from server.\n");
+            break;
+        }
+
+        msg[bytes] = '\0';
+
+        if (strlen(msg) > 50) // receive a board, need to change this to check message type
+        {
+            s.resize(100);
+            convert(a, msg);
+            cout << "Received new board" << endl;
+            print_board(a);
+            cout << endl;
+
+            bzero(msg, 100);
+            printf("[client]Enter your desired move: ");
+            fflush(stdout);
+        }
+
+        else
+            cout << "Message: " << msg << endl;
+        if (strcmp(msg, "winner") == 0)
+        {
+            cout << "You won!!!" << endl;
+            in_game = 0;
+            break;
+        }
+        if (strcmp(msg, "loser") == 0)
+        {
+            cout << "You lost!!!" << endl;
+            in_game = 0;
+            break;
+        }
+
+        if (strcmp(msg, "Invalid move") == 0)
+        {
+            cout << "Invalid move!" << endl;
+        }
+    }
+
+    int *result = new int(42);
+    pthread_exit(nullptr);
 }
 
 int main(int argc, char *argv[])
 {
     int sd;
     struct sockaddr_in server;
-    char msg[100];
+    string msg;
 
     if (argc != 3)
     {
@@ -206,8 +287,10 @@ int main(int argc, char *argv[])
     string s;
     while (1)
     {
-        int signal;
+        fflush(stdin);
+
         option = menu();
+        cout << "sdsd" << option << "asdasd" << endl;
         if (send(sd, &option, sizeof(option), 0) == -1)
         {
             cerr << "Error occurred while sending the option to the server." << endl;
@@ -218,75 +301,28 @@ int main(int argc, char *argv[])
         switch (option)
         {
         case 1:
-            pthread_t threadId;
 
-            int result = pthread_create(&threadId, nullptr, communication_thread, nullptr);
-            if (result != 0)
-            {
-                cerr << "Failed to create thread." << endl;
-                return 1;
-            }
-            s.resize(100);
-            if (read(sd, &s[0], s.size()) < 0)
-            {
-                perror("[client]Error at read() from the server.\n");
-                return errno;
-            }
-            convert(a, s);
-            print_board(a);
-            cout << endl;
+            in_game = 1;
+            pthread_t receive_tid;
+            pthread_create(&receive_tid, NULL, receive_game_data, &sd);
 
-            // Working ...
-            // Need to make client get the existing board right after making a move, so when win can receive the win message
+            pthread_t send_tid;
+            pthread_create(&send_tid, NULL, send_game_data, &sd); // maybe handle if cannot create thread
+
             while (1)
             {
-                bzero(msg, 100);
-                printf("[client]Enter your desired move: ");
-                fflush(stdout);
-                read(0, msg, 100);
-
-                if (write(sd, msg, 100) <= 0)
-                {
-                    perror("[client]Error in write() to server.\n");
-                    return errno;
-                }
-
-                // if (strcmp(msg, "surrender\n") == 0)
-                //     break;
-
-                int bytes;
-                bytes = read(sd, msg, 100);
-                if (bytes < 0)
-                {
-                    perror("[client]Error in read() from server.\n");
-                    return errno;
-                }
-
-                msg[bytes] = '\0';
-                cout << "MESSAGE: " << msg << endl;
-                if (strcmp(msg, "winner") == 0)
-                {
-                    cout << "You won!!!" << endl;
+                if (!in_game)
                     break;
-                }
-                if (strcmp(msg, "loser") == 0)
-                {
-                    cout << "You lost!!!" << endl;
-                    break;
-                }
-                if (!strstr(msg, "Invalid"))
-                {
-                    s.resize(100);
-                    if (read(sd, &s[0], s.size()) < 0)
-                    {
-                        perror("[client]Error in read() from server.\n");
-                        return errno;
-                    }
-                    convert(a, s);
-                    print_board(a);
-                    cout << endl;
-                }
             }
+            // pthread_kill(receive_tid, SIGUSR1);
+            // pthread_kill(send_tid, SIGUSR1);
+            pthread_cancel(send_tid);
+            // Wait for the thread to finish
+            pthread_join(receive_tid, nullptr);
+            pthread_join(send_tid, nullptr);
+
+            break;
+
             break;
         case 2:
             cout << "Challenging another player..." << endl;
@@ -300,56 +336,5 @@ int main(int argc, char *argv[])
         }
     }
 
-    // The commented code below is for a chess game
-    // int a[9][9];
-
-    // int x = 0;
-    // string s;
-    // s.resize(100);
-    // if (read(sd, &s[0], s.size()) < 0)
-    // {
-    //     perror("[client]Error at read() from the server.\n");
-    //     return errno;
-    // }
-    // convert(a, s);
-    // print_board(a);
-    // cout << endl;
-
-    // while (1)
-    // {
-    //     bzero(msg, 100);
-    //     printf("[client]`your desired move: ");
-    //     fflush(stdout);
-    //     read(0, msg, 100);
-
-    //     if (write(sd, msg, 100) <= 0)
-    //     {
-    //         perror("[client]Error in write() to server.\n");
-    //         return errno;
-    //     }
-
-    //     if (strcmp(msg, "surrender\n") == 0)
-    //         break;
-
-    //     if (read(sd, msg, 100) < 0)
-    //     {
-    //         perror("[client]Error in read() from server.\n");
-    //         return errno;
-    //     }
-    //     cout << msg << endl;
-
-    //     if (!strstr(msg, "Invalid"))
-    //     {
-    //         s.resize(100);
-    //         if (read(sd, &s[0], s.size()) < 0)
-    //         {
-    //             perror("[client]Error in read() from server.\n");
-    //             return errno;
-    //         }
-    //         convert(a, s);
-    //         print_board(a);
-    //         cout << endl;
-    //     }
-    // }
     close(sd);
 }

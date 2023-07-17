@@ -11,15 +11,72 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <pthread.h>
+#include <vector>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
 
 #define PORT 3000
 using namespace std;
 
 extern int errno;
+struct Player
+{
+    int round;
+    int fd;
+    int free;
+};
 
-char A[9][9];
-int vizA[4] = {0};
-int vizB[4] = {0};
+fd_set readfds;
+fd_set actfds;
+int v[250] = {0};
+
+vector<Player> online_players;
+queue<Player *> match_making_players;
+
+mutex queue_mutex;
+condition_variable queue_condition;
+struct PlayGameThreadData
+{
+    Player *player_a;
+    Player *player_b;
+};
+
+void *client_operation(void *);
+void *play_game(void *);
+
+void remove_player_from_matchmaking()
+{
+    // Working
+}
+
+void disconnect_player(int fd)
+{
+    auto it = online_players.begin();
+    while (it != online_players.end())
+    {
+        if ((*it).fd == fd)
+            break;
+
+        it++;
+    }
+
+    if (it != online_players.end())
+    {
+        online_players.erase(it);
+        cout << "Player " << fd << " disconnected!" << endl;
+    }
+    else
+    {
+        cout << "Player " << fd << " not found in online player vector list" << endl;
+    }
+    FD_CLR(fd, &actfds);
+    FD_CLR(fd, &readfds);
+    close(fd);
+    v[fd] = 0;
+}
+
 void create_table(char A[9][9])
 {
     int i, j;
@@ -58,19 +115,13 @@ void create_table(char A[9][9])
     A[1][5] = 'K';
     A[8][5] = 'k';
 
-    for (i = 1; i <= 8; i++)
-    {
-        for (j = 1; j <= 8; j++)
-            cout << A[i][j] << ' ';
-        cout << endl;
-    }
+    // for (i = 1; i <= 8; i++)
+    // {
+    //     for (j = 1; j <= 8; j++)
+    //         cout << A[i][j] << ' ';
+    //     cout << endl;
+    // }
 }
-
-struct Player
-{
-    int round;
-    int fd;
-};
 
 string convert(char A[9][9])
 {
@@ -86,45 +137,45 @@ string convert(char A[9][9])
     return s;
 }
 
-int move_straight_line(int sr, int sc, int fr, int fc)
+int move_straight_line(char A[9][9], int sr, int sc, int dr, int dc)
 { // move along either row or column (1 only)
     int i, j;
-    if (fr > sr && fc == sc)
+    if (dr > sr && dc == sc)
     {
         i = sr + 1, j = sc;
-        while (A[i][j] == '-' && i < fr)
+        while (A[i][j] == '-' && i < dr)
             i++;
-        if (i == fr && j == fc)
+        if (i == dr && j == dc)
             return 1;
         else
             return 0;
     }
-    else if (fr < sr && fc == sc)
+    else if (dr < sr && dc == sc)
     {
         i = sr - 1, j = sc;
-        while (A[i][j] == '-' && i > fr)
+        while (A[i][j] == '-' && i > dr)
             i--;
-        if (i == fr && j == fc)
+        if (i == dr && j == dc)
             return 1;
         else
             return 0;
     }
-    else if (fc > sc && fr == sr)
+    else if (dc > sc && dr == sr)
     {
         i = sr, j = sc + 1;
-        while (A[i][j] == '-' && j < fc)
+        while (A[i][j] == '-' && j < dc)
             j++;
-        if (i == fr && j == fc)
+        if (i == dr && j == dc)
             return 1;
         else
             return 0;
     }
-    else if (fc < sc && fr == sr)
+    else if (dc < sc && dr == sr)
     {
         i = sr, j = sc - 1;
-        while (A[i][j] == '-' && j > fc)
+        while (A[i][j] == '-' && j > dc)
             j--;
-        if (i == fr && j == fc)
+        if (i == dr && j == dc)
             return 1;
         else
             return 0;
@@ -133,45 +184,45 @@ int move_straight_line(int sr, int sc, int fr, int fc)
         return 0;
 }
 
-int move_diagonal_line(int sr, int sc, int fr, int fc)
+int move_diagonal_line(char A[9][9], int sr, int sc, int dr, int dc)
 { // moving diagonally (long both rows and columns)
     int i, j;
-    if (fr > sr && fc > sc)
+    if (dr > sr && dc > sc)
     {
         i = sr + 1, j = sc + 1;
-        while (A[i][j] == '-' && i < fr && j < fc)
+        while (A[i][j] == '-' && i < dr && j < dc)
             i++, j++;
-        if (i == fr && j == fc)
+        if (i == dr && j == dc)
             return 1;
         else
             return 0;
     }
-    else if (fr > sr && fc < sc)
+    else if (dr > sr && dc < sc)
     {
         i = sr + 1, j = sc - 1;
-        while (A[i][j] == '-' && i < fr && j > fc)
+        while (A[i][j] == '-' && i < dr && j > dc)
             i++, j--;
-        if (i == fr && j == fc)
+        if (i == dr && j == dc)
             return 1;
         else
             return 0;
     }
-    else if (fr < sr && fc > sc)
+    else if (dr < sr && dc > sc)
     {
         i = sr - 1, j = sc + 1;
-        while (A[i][j] == '-' && i > fr && j < fc)
+        while (A[i][j] == '-' && i > dr && j < dc)
             i--, j++;
-        if (i == fr && j == fc)
+        if (i == dr && j == dc)
             return 1;
         else
             return 0;
     }
-    else if (fr < sr && fc < sc)
+    else if (dr < sr && dc < sc)
     {
         i = sr - 1, j = sc - 1;
-        while (A[i][j] == '-' && i > fr && j > fc)
+        while (A[i][j] == '-' && i > dr && j > dc)
             i--, j--;
-        if (i == fr && j == fc)
+        if (i == dr && j == dc)
             return 1;
         else
             return 0;
@@ -194,242 +245,242 @@ int is_black_piece(char letter)
     return 0;
 }
 
-int pawn(char type, int sr, int sc, int fr, int fc)
+int pawn(char A[9][9], char type, int sr, int sc, int dr, int dc)
 {
     if (is_white_piece(type))
     {
-        if (is_white_piece(A[fr][fc]))
+        if (is_white_piece(A[dr][dc]))
             return 0;
-        else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
+        else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
             return 0; // Outside of matrix
-        else if (fr <= sr)
+        else if (dr <= sr)
             return 0; // The pawn is not allowed to move backwards.
-        else if (fr - sr == 2 && sr == 2 && fc == sc && A[fr][fc] == '-')
+        else if (dr - sr == 2 && sr == 2 && dc == sc && A[dr][dc] == '-')
         {
-            if (is_black_piece(A[fr][fc]))
+            if (is_black_piece(A[dr][dc]))
                 return 0;
             else
                 return 1;
         }
-        else if (fr - sr == 1 && abs(fc - sc) == 1 && (is_black_piece(A[fr][fc])))
+        else if (dr - sr == 1 && abs(dc - sc) == 1 && (is_black_piece(A[dr][dc])))
             return 1;
-        else if (fr - sr == 1 && fc == sc && !is_black_piece(A[fr][fc]))
+        else if (dr - sr == 1 && dc == sc && !is_black_piece(A[dr][dc]))
             return 1;
     }
     else if (is_black_piece(type))
     {
-        if (is_black_piece(A[fr][fc]))
+        if (is_black_piece(A[dr][dc]))
             return 0;
-        else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
-            return 0; // in afara matricii
-        else if (fr >= sr)
+        else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
+            return 0; // outside of the board
+        else if (dr >= sr)
             return 0; // nu are voie pawnul sa fie dat inapoi
-        else if (sr - fr == 2 && sr == 7 && fc == sc && A[fr][fc] == '-')
+        else if (sr - dr == 2 && sr == 7 && dc == sc && A[dr][dc] == '-')
         {
-            if (is_white_piece(A[fr][fc]))
+            if (is_white_piece(A[dr][dc]))
                 return 0;
             else
                 return 1;
         }
-        else if (sr - fr == 1 && abs(fc - sc) == 1 && (is_white_piece(A[fr][fc])))
+        else if (sr - dr == 1 && abs(dc - sc) == 1 && (is_white_piece(A[dr][dc])))
             return 1;
-        else if (sr - fr == 1 && fc == sc && !is_white_piece(A[fr][fc]))
+        else if (sr - dr == 1 && dc == sc && !is_white_piece(A[dr][dc]))
             return 1;
     }
 }
 
-int king(char type, int sr, int sc, int fr, int fc)
+int king(char A[9][9], char type, int sr, int sc, int dr, int dc)
 {
     if (is_white_piece(type))
     {
-        if (is_white_piece(A[fr][fc]))
+        if (is_white_piece(A[dr][dc]))
             return 0;
-        else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
-            return 0; // in afara matricii
-        else if ((abs(fr - sr) == 1 || abs(fr - sr) == 0) && (abs(fc - sc) == 1 || abs(fc - sc) == 0))
+        else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
+            return 0; // outside of the board
+        else if ((abs(dr - sr) == 1 || abs(dr - sr) == 0) && (abs(dc - sc) == 1 || abs(dc - sc) == 0))
             return 1;
         else
             return 0;
     }
     else if (is_black_piece(type))
     {
-        if (is_black_piece(A[fr][fc]))
+        if (is_black_piece(A[dr][dc]))
             return 0;
-        else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
-            return 0; // in afara matricii
-        else if ((abs(fr - sr) == 1 || abs(fr - sr) == 0) && (abs(fc - sc) == 1 || abs(fc - sc) == 0))
+        else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
+            return 0; // outside of the board
+        else if ((abs(dr - sr) == 1 || abs(dr - sr) == 0) && (abs(dc - sc) == 1 || abs(dc - sc) == 0))
             return 1;
         else
             return 0;
     }
 }
 
-int knight(char type, int sr, int sc, int fr, int fc)
+int knight(char A[9][9], char type, int sr, int sc, int dr, int dc)
 {
     if (is_white_piece(type))
     {
-        if (is_white_piece(A[fr][fc]))
+        if (is_white_piece(A[dr][dc]))
             return 0;
-        else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
-            return 0; // in afara matricii
-        if ((abs(fr - sr) == 1 || abs(fr - sr) == 2) && (abs(fc - sc) == 1 || abs(fc - sc) == 2))
+        else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
+            return 0; // outside of the board
+        if ((abs(dr - sr) == 1 || abs(dr - sr) == 2) && (abs(dc - sc) == 1 || abs(dc - sc) == 2))
             return 1;
         else
             return 0;
     }
     else if (is_black_piece(type))
     {
-        if (is_black_piece(A[fr][fc]))
+        if (is_black_piece(A[dr][dc]))
             return 0;
-        else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
-            return 0; // in afara matricii
-        if ((abs(fr - sr) == 1 || abs(fr - sr) == 2) && (abs(fc - sc) == 1 || abs(fc - sc) == 2))
+        else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
+            return 0; // outside of the board
+        if ((abs(dr - sr) == 1 || abs(dr - sr) == 2) && (abs(dc - sc) == 1 || abs(dc - sc) == 2))
             return 1;
         else
             return 0;
     }
 }
 
-int rook(char type, int sr, int sc, int fr, int fc)
+int rook(char A[9][9], char type, int sr, int sc, int dr, int dc)
 {
     if (is_white_piece(type))
     {
-        if (is_white_piece(A[fr][fc]))
+        if (is_white_piece(A[dr][dc]))
             return 0;
-        else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
-            return 0; // in afara matricii
-        else if (move_straight_line(sr, sc, fr, fc))
+        else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
+            return 0; // outside of the board
+        else if (move_straight_line(A, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     }
     else if (is_black_piece(type))
     {
-        if (is_black_piece(A[fr][fc]))
+        if (is_black_piece(A[dr][dc]))
             return 0;
-        else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
-            return 0; // in afara matricii
-        else if (move_straight_line(sr, sc, fr, fc))
+        else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
+            return 0; // outside of the board
+        else if (move_straight_line(A, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     }
 }
 
-int bishop(char type, int sr, int sc, int fr, int fc)
+int bishop(char A[9][9], char type, int sr, int sc, int dr, int dc)
 {
     if (is_white_piece(type))
     {
-        if (is_white_piece(A[fr][fc]))
+        if (is_white_piece(A[dr][dc]))
             return 0;
-        else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
+        else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
             return 0;
-        else if (move_diagonal_line(sr, sc, fr, fc))
+        else if (move_diagonal_line(A, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     }
     else if (is_black_piece(type))
     {
-        if (is_black_piece(A[fr][fc]))
+        if (is_black_piece(A[dr][dc]))
             return 0;
-        else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
+        else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
             return 0;
-        else if (move_diagonal_line(sr, sc, fr, fc))
+        else if (move_diagonal_line(A, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     }
 }
 
-int queen(char type, int sr, int sc, int fr, int fc)
+int queen(char A[9][9], char type, int sr, int sc, int dr, int dc)
 {
     int i, j;
     if (is_white_piece(type))
     {
-        if (is_white_piece(A[fr][fc]))
+        if (is_white_piece(A[dr][dc]))
             return 0;
-        else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
-            return 0; // in afara matricii
-        else if (move_diagonal_line(sr, sc, fr, fc) || move_straight_line(sr, sc, fr, fc))
+        else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
+            return 0; // outside of the board
+        else if (move_diagonal_line(A, sr, sc, dr, dc) || move_straight_line(A, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     }
     else if (is_black_piece(type))
     {
-        if (is_black_piece(A[fr][fc]))
+        if (is_black_piece(A[dr][dc]))
             return 0;
-        else if (fr > 8 || fr < 1 || fc > 8 || fc < 1)
-            return 0; // in afara matricii
-        else if (move_diagonal_line(sr, sc, fr, fc) || move_straight_line(sr, sc, fr, fc))
+        else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
+            return 0; // outside of the board
+        else if (move_diagonal_line(A, sr, sc, dr, dc) || move_straight_line(A, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     }
 }
 
-int is_valid_move(char type, int sr, int sc, int fr, int fc)
+int is_valid_move(char A[9][9], char type, int sr, int sc, int dr, int dc)
 {
     switch (type)
     {
     case 'p':
-        if (pawn(type, sr, sc, fr, fc))
+        if (pawn(A, type, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     case 'P':
-        if (pawn(type, sr, sc, fr, fc))
+        if (pawn(A, type, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     case 'k':
-        if (king(type, sr, sc, fr, fc))
+        if (king(A, type, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     case 'K':
-        if (king(type, sr, sc, fr, fc))
+        if (king(A, type, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     case 'c':
-        if (knight(type, sr, sc, fr, fc))
+        if (knight(A, type, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     case 'C':
-        if (knight(type, sr, sc, fr, fc))
+        if (knight(A, type, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     case 'r':
-        if (rook(type, sr, sc, fr, fc))
+        if (rook(A, type, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     case 'R':
-        if (rook(type, sr, sc, fr, fc))
+        if (rook(A, type, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     case 'b':
-        if (bishop(type, sr, sc, fr, fc))
+        if (bishop(A, type, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     case 'B':
-        if (bishop(type, sr, sc, fr, fc))
+        if (bishop(A, type, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     case 'q':
-        if (queen(type, sr, sc, fr, fc))
+        if (queen(A, type, sr, sc, dr, dc))
             return 1;
         else
             return 0;
     case 'Q':
-        if (queen(type, sr, sc, fr, fc))
+        if (queen(A, type, sr, sc, dr, dc))
             return 1;
         else
             return 0;
@@ -438,30 +489,30 @@ int is_valid_move(char type, int sr, int sc, int fr, int fc)
     }
 }
 
-void find_my_king(char type, int &fr, int &fc)
+void find_my_king(char A[9][9], char type, int &dr, int &dc)
 {
     int i, j;
     for (i = 1; i <= 8; i++)
         for (j = 1; j <= 8; j++)
             if (A[i][j] == type)
             {
-                fr = i;
-                fc = j;
+                dr = i;
+                dc = j;
                 break;
             }
 }
 
-int is_checked(char type, int fr, int fc)
+int is_checked(char A[9][9], char type, int dr, int dc)
 {
     int i, j;
-    if (fr < 1 || fr > 8 || fc < 1 || fc > 8)
+    if (dr < 1 || dr > 8 || dc < 1 || dc > 8)
         return 0;
     else if (is_white_piece(type))
     {
         for (i = 1; i <= 8; i++)
             for (j = 1; j <= 8; j++)
                 if (is_black_piece(A[i][j]))
-                    if (is_valid_move(A[i][j], i, j, fr, fc))
+                    if (is_valid_move(A, A[i][j], i, j, dr, dc))
                         return 1;
 
         return 0;
@@ -471,18 +522,18 @@ int is_checked(char type, int fr, int fc)
         for (i = 1; i <= 8; i++)
             for (j = 1; j <= 8; j++)
                 if (is_white_piece(A[i][j]))
-                    if (is_valid_move(A[i][j], i, j, fr, fc))
+                    if (is_valid_move(A, A[i][j], i, j, dr, dc))
                         return 1;
 
         return 0;
     }
 }
 
-int check(char type)
+int check(char A[9][9], char type)
 {
-    int fr, fc;
-    find_my_king(type, fr, fc);
-    if (is_checked(type, fr, fc))
+    int dr, dc;
+    find_my_king(A, type, dr, dc);
+    if (is_checked(A, type, dr, dc))
         return 1;
     return 0;
 }
@@ -495,75 +546,75 @@ void copy(char B[9][9], char A[9][9])
             B[i][j] = A[i][j];
 }
 
-int check_mate(char type)
+int check_mate(char A[9][9], char type)
 {
     const int dir[8] = {0};
     char B[9][9], C[9][9];
     copy(B, A);
     copy(C, A);
-    int i, j, fr, fc;
-    find_my_king(type, fr, fc);
+    int i, j, dr, dc;
+    find_my_king(A, type, dr, dc);
     if (is_black_piece(type))
     {
-        if (C[fr - 1][fc] == '-')
-            A[fr - 1][fc] = 'K';
-        if (C[fr + 1][fc] == '-')
-            A[fr + 1][fc] = 'K';
-        if (C[fr - 1][fc - 1] == '-')
-            A[fr - 1][fc - 1] = 'K';
-        if (C[fr - 1][fc + 1] == '-')
-            A[fr - 1][fc + 1] = 'K';
-        if (C[fr + 1][fc + 1] == '-')
-            A[fr + 1][fc + 1] = 'K';
-        if (C[fr + 1][fc - 1] == '-')
-            A[fr + 1][fc - 1] = 'K';
-        if (C[fr][fc - 1] == '-')
-            A[fr][fc - 1] = 'K';
-        if (C[fr][fc + 1] == '-')
-            A[fr][fc + 1] = 'K';
+        if (C[dr - 1][dc] == '-')
+            A[dr - 1][dc] = 'K';
+        if (C[dr + 1][dc] == '-')
+            A[dr + 1][dc] = 'K';
+        if (C[dr - 1][dc - 1] == '-')
+            A[dr - 1][dc - 1] = 'K';
+        if (C[dr - 1][dc + 1] == '-')
+            A[dr - 1][dc + 1] = 'K';
+        if (C[dr + 1][dc + 1] == '-')
+            A[dr + 1][dc + 1] = 'K';
+        if (C[dr + 1][dc - 1] == '-')
+            A[dr + 1][dc - 1] = 'K';
+        if (C[dr][dc - 1] == '-')
+            A[dr][dc - 1] = 'K';
+        if (C[dr][dc + 1] == '-')
+            A[dr][dc + 1] = 'K';
     }
     else if (is_white_piece(type))
     {
-        if (C[fr - 1][fc] == '-')
-            A[fr - 1][fc] = 'k';
-        if (C[fr + 1][fc] == '-')
-            A[fr + 1][fc] = 'k';
-        if (C[fr - 1][fc - 1] == '-')
-            A[fr - 1][fc - 1] = 'k';
-        if (C[fr - 1][fc + 1] == '-')
-            A[fr - 1][fc + 1] = 'k';
-        if (C[fr + 1][fc + 1] == '-')
-            A[fr + 1][fc + 1] = 'k';
-        if (C[fr + 1][fc - 1] == '-')
-            A[fr + 1][fc - 1] = 'k';
-        if (C[fr][fc - 1] == '-')
-            A[fr][fc - 1] = 'k';
-        if (C[fr][fc + 1] == '-')
-            A[fr][fc + 1] = 'k';
+        if (C[dr - 1][dc] == '-')
+            A[dr - 1][dc] = 'k';
+        if (C[dr + 1][dc] == '-')
+            A[dr + 1][dc] = 'k';
+        if (C[dr - 1][dc - 1] == '-')
+            A[dr - 1][dc - 1] = 'k';
+        if (C[dr - 1][dc + 1] == '-')
+            A[dr - 1][dc + 1] = 'k';
+        if (C[dr + 1][dc + 1] == '-')
+            A[dr + 1][dc + 1] = 'k';
+        if (C[dr + 1][dc - 1] == '-')
+            A[dr + 1][dc - 1] = 'k';
+        if (C[dr][dc - 1] == '-')
+            A[dr][dc - 1] = 'k';
+        if (C[dr][dc + 1] == '-')
+            A[dr][dc + 1] = 'k';
     }
 
-    if (check(type))
+    if (check(A, type))
     {
         int nr = 1;
-        if (is_checked(type, fr - 1, fc) && B[fr - 1][fc] == '-')
-            B[fr - 1][fc] = 'x', nr++;
-        if (is_checked(type, fr + 1, fc) && B[fr + 1][fc] == '-')
-            B[fr + 1][fc] = 'x', nr++;
-        if (is_checked(type, fr - 1, fc - 1) && B[fr - 1][fc - 1] == '-')
-            B[fr - 1][fc - 1] = 'x', nr++;
-        if (is_checked(type, fr - 1, fc + 1) && B[fr - 1][fc + 1] == '-')
-            B[fr - 1][fc + 1] = 'x', nr++;
-        if (is_checked(type, fr + 1, fc + 1) && B[fr + 1][fc + 1] == '-')
-            B[fr + 1][fc + 1] = 'x', nr++;
-        if (is_checked(type, fr + 1, fc - 1) && B[fr + 1][fc - 1] == '-')
-            B[fr + 1][fc - 1] = 'x', nr++;
-        if (is_checked(type, fr, fc - 1) && B[fr][fc - 1] == '-')
-            B[fr][fc - 1] = 'x', nr++;
-        if (is_checked(type, fr, fc + 1) && B[fr][fc + 1] == '-')
-            B[fr][fc + 1] = 'x', nr++;
+        if (is_checked(A, type, dr - 1, dc) && B[dr - 1][dc] == '-')
+            B[dr - 1][dc] = 'x', nr++;
+        if (is_checked(A, type, dr + 1, dc) && B[dr + 1][dc] == '-')
+            B[dr + 1][dc] = 'x', nr++;
+        if (is_checked(A, type, dr - 1, dc - 1) && B[dr - 1][dc - 1] == '-')
+            B[dr - 1][dc - 1] = 'x', nr++;
+        if (is_checked(A, type, dr - 1, dc + 1) && B[dr - 1][dc + 1] == '-')
+            B[dr - 1][dc + 1] = 'x', nr++;
+        if (is_checked(A, type, dr + 1, dc + 1) && B[dr + 1][dc + 1] == '-')
+            B[dr + 1][dc + 1] = 'x', nr++;
+        if (is_checked(A, type, dr + 1, dc - 1) && B[dr + 1][dc - 1] == '-')
+            B[dr + 1][dc - 1] = 'x', nr++;
+        if (is_checked(A, type, dr, dc - 1) && B[dr][dc - 1] == '-')
+            B[dr][dc - 1] = 'x', nr++;
+        if (is_checked(A, type, dr, dc + 1) && B[dr][dc + 1] == '-')
+            B[dr][dc + 1] = 'x', nr++;
         copy(A, C);
-        if (B[fr][fc + 1] == '-' || B[fr][fc - 1] == '-' || B[fr + 1][fc - 1] == '-' || B[fr + 1][fc + 1] == '-' || B[fr - 1][fc + 1] == '-' || B[fr - 1][fc - 1] == '-' || B[fr + 1][fc] == '-' ||
-            B[fr - 1][fc] == '-')
+        if (B[dr][dc + 1] == '-' || B[dr][dc - 1] == '-' || B[dr + 1][dc - 1] == '-' || B[dr + 1][dc + 1] == '-' || B[dr - 1][dc + 1] == '-' || B[dr - 1][dc - 1] == '-' || B[dr + 1][dc] == '-' ||
+            B[dr - 1][dc] == '-')
             return 0;
         if (nr > 1)
             return 1;
@@ -571,7 +622,23 @@ int check_mate(char type)
     return 0;
 }
 
-int message(int fd, int &verify, char move)
+void send_result(int loser_fd, int winner_fd)
+{
+    char msg[100];
+    strcpy(msg, "winner");
+    if (write(winner_fd, msg, strlen(msg)) < 0)
+    {
+        cerr << "Error occurred while sending message to the Winner." << endl;
+    }
+    strcpy(msg, "loser");
+    if (write(loser_fd, msg, strlen(msg)) < 0)
+    {
+        cerr << "Error occurred while sending message to the Loser" << endl;
+    }
+    cout << "The winner is " << winner_fd << endl;
+}
+
+int message(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, int &verify, char move)
 {
     string s;
     char buffer[100];
@@ -585,12 +652,12 @@ int message(int fd, int &verify, char move)
         perror("Error in read() from the client.\n");
         return 0;
     }
-
-    int sr, sc, fr, fc;
+    cout << fd << " said " << msg << endl;
+    int sr, sc, dr, dc;
     char type, c1, c2, transform;
     strcpy(msgrasp, msg);
     int i, nr = 0;
-    // Preluare coordonate.
+    // get the coordinates
     for (i = 0; msgrasp[i]; i++)
     {
         if (msgrasp[i] != ' ')
@@ -606,11 +673,11 @@ int message(int fd, int &verify, char move)
                 sr = (int)msgrasp[i] - 48;
             case 2:
             {
-                fc = (int)msgrasp[i] - 96;
+                dc = (int)msgrasp[i] - 96;
                 c2 = msgrasp[i];
             }
             case 3:
-                fr = (int)msgrasp[i] - 48;
+                dr = (int)msgrasp[i] - 48;
 
             case 4:
                 transform = msgrasp[i];
@@ -619,9 +686,9 @@ int message(int fd, int &verify, char move)
         }
     }
 
-    save = A[fr][fc];
+    save = A[dr][dc];
     type = A[sr][sc];
-    // Vizitari piese pentru a verifica daca se poate executa rocada sau nu. Daca piesele au fost mutate rocada nu mai poate avea loc.
+    // visits parts to check if the cast can be executed or not. If the pieces have been moved, castling cannot happen.
     if (type == 'K' && transform != 'F')
         vizA[2] = 1;
     else if (type == 'R' && sc == 1 && transform != 'F')
@@ -635,20 +702,23 @@ int message(int fd, int &verify, char move)
     else if (type == 'r' && sc == 8 && transform != 'F')
         vizB[3] = 1;
 
-    cout << type << " " << sr << " " << sc << " " << fr << " " << fc << " " << transform << endl;
+    // cout << type << " " << sr << " " << sc << " " << dr << " " << dc << " " << transform << endl;
 
     if (strcmp(msg, "surrender\n") == 0)
-        return -1;
-    else if (move == 'a' && check_mate('K'))
     {
-        strcpy(msg, "The winner is player B");
-        write(fd, msg, strlen(msg));
+        send_result(fd, opponent_fd);
         return -1;
     }
-    else if (move == 'b' && check_mate('k'))
+    else if (move == 'a' && check_mate(A, 'K'))
     {
-        strcpy(msg, "The winner is player A");
-        write(fd, msg, strlen(msg));
+
+        send_result(fd, opponent_fd);
+        return -1;
+    }
+    else if (move == 'b' && check_mate(A, 'k'))
+    {
+
+        send_result(opponent_fd, fd);
         return -1;
     }
     else if (move == 'a' && is_black_piece(type))
@@ -672,23 +742,23 @@ int message(int fd, int &verify, char move)
     else if (transform == 'F')
     { // ROCADA
         int ok = 0;
-        if (sr == 1 && fr == 1)
+        if (sr == 1 && dr == 1)
         {
             char t1, t2;
-            t1 = A[sr][sc], t2 = A[fr][fc];
-            if (sc == 1 && fc == 5)
+            t1 = A[sr][sc], t2 = A[dr][dc];
+            if (sc == 1 && dc == 5)
             {
                 if (is_white_piece(t1) && is_white_piece(t2))
                 {
-                    if (!is_checked(t1, fr, fc - 1) && !is_checked(t2, fr, fc - 2))
+                    if (!is_checked(A, t1, dr, dc - 1) && !is_checked(A, t2, dr, dc - 2))
                     {
                         if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-' && A[sr][sc + 3] == '-')
                             if (!vizA[1] && !vizA[2])
                             {
                                 A[sr][sc] = '-';
-                                A[fr][fc] = '-';
+                                A[dr][dc] = '-';
                                 A[sr][sc + 2] = t2;
-                                A[sr][fc - 1] = t1;
+                                A[sr][dc - 1] = t1;
                                 vizA[1] = 1;
                                 vizA[2] = 1;
                                 ok = 1;
@@ -696,19 +766,19 @@ int message(int fd, int &verify, char move)
                     }
                 }
             }
-            else if (sc == 5 && fc == 8)
+            else if (sc == 5 && dc == 8)
             {
                 if (is_white_piece(t1) && is_white_piece(t2))
                 {
-                    if (!is_checked(t1, fr, sc + 1) && !is_checked(t2, fr, sc + 2))
+                    if (!is_checked(A, t1, dr, sc + 1) && !is_checked(A, t2, dr, sc + 2))
                     {
                         if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-')
                             if (!vizA[2] && !vizA[3])
                             {
                                 A[sr][sc] = '-';
-                                A[fr][fc] = '-';
+                                A[dr][dc] = '-';
                                 A[sr][sc + 1] = t2;
-                                A[sr][fc - 1] = t1;
+                                A[sr][dc - 1] = t1;
                                 vizA[2] = 1;
                                 vizA[3] = 1;
                                 ok = 1;
@@ -717,23 +787,23 @@ int message(int fd, int &verify, char move)
                 }
             }
         }
-        else if (sr == 8 && fr == 8)
+        else if (sr == 8 && dr == 8)
         {
             char t1, t2;
-            t1 = A[sr][sc], t2 = A[fr][fc];
-            if (sc == 1 && fc == 5)
+            t1 = A[sr][sc], t2 = A[dr][dc];
+            if (sc == 1 && dc == 5)
             {
                 if (is_black_piece(t1) && is_black_piece(t2))
                 {
-                    if (!is_checked(t1, fr, fc - 1) && !is_checked(t2, fr, fc - 2))
+                    if (!is_checked(A, t1, dr, dc - 1) && !is_checked(A, t2, dr, dc - 2))
                     {
                         if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-' && A[sr][sc + 3] == '-')
                             if (!vizB[1] && !vizB[2])
                             {
                                 A[sr][sc] = '-';
-                                A[fr][fc] = '-';
+                                A[dr][dc] = '-';
                                 A[sr][sc + 2] = t2;
-                                A[sr][fc - 1] = t1;
+                                A[sr][dc - 1] = t1;
                                 vizB[1] = 1;
                                 vizB[2] = 1;
                                 ok = 1;
@@ -741,19 +811,19 @@ int message(int fd, int &verify, char move)
                     }
                 }
             }
-            else if (sc == 5 && fc == 8)
+            else if (sc == 5 && dc == 8)
             {
                 if (is_black_piece(t1) && is_black_piece(t2))
                 {
-                    if (!is_checked(t1, fr, sc + 1) && !is_checked(t2, fr, sc + 2))
+                    if (!is_checked(A, t1, dr, sc + 1) && !is_checked(A, t2, dr, sc + 2))
                     {
                         if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-')
                             if (!vizB[2] && !vizB[3])
                             {
                                 A[sr][sc] = '-';
-                                A[fr][fc] = '-';
+                                A[dr][dc] = '-';
                                 A[sr][sc + 1] = t2;
-                                A[sr][fc - 1] = t1;
+                                A[sr][dc - 1] = t1;
                                 vizB[2] = 1;
                                 vizB[3] = 1;
                                 ok = 1;
@@ -779,41 +849,41 @@ int message(int fd, int &verify, char move)
             return s.size();
         }
     }
-    else if (!is_valid_move(type, sr, sc, fr, fc))
+    else if (!is_valid_move(A, type, sr, sc, dr, dc))
     {
         strcpy(msg, "Invalid move");
         write(fd, msg, strlen(msg));
         return -2;
     }
-    else if (is_valid_move(type, sr, sc, fr, fc))
+    else if (is_valid_move(A, type, sr, sc, dr, dc))
     {
         A[sr][sc] = '-';
-        A[fr][fc] = type;
-        if (move == 'a' && check('K'))
+        A[dr][dc] = type;
+        if (move == 'a' && check(A, 'K'))
         {
             strcpy(msg, "Invalid move! check!");
             write(fd, msg, strlen(msg));
             A[sr][sc] = type;
-            A[fr][fc] = save;
+            A[dr][dc] = save;
             return -2;
         }
-        else if (move == 'b' && check('k'))
+        else if (move == 'b' && check(A, 'k'))
         {
             strcpy(msg, "Invalid move! check!");
             write(fd, msg, strlen(msg));
             A[sr][sc] = type;
-            A[fr][fc] = save;
+            A[dr][dc] = save;
             return -2;
         }
 
         // Transformation invalid for pawn when reaching the enemy's last row.
-        if (type == 'p' && fr == 1 && is_black_piece(transform) && (transform == 'b' || transform == 'c' || transform == 'q' || transform == 'r'))
-            A[sr][sc] = '-', A[fr][fc] = transform;
-        else if (type == 'P' && fr == 8 && is_white_piece(transform) && (transform == 'B' || transform == 'C' || transform == 'Q' || transform == 'R'))
-            A[sr][sc] = '-', A[fr][fc] = transform;
+        if (type == 'p' && dr == 1 && is_black_piece(transform) && (transform == 'b' || transform == 'c' || transform == 'q' || transform == 'r'))
+            A[sr][sc] = '-', A[dr][dc] = transform;
+        else if (type == 'P' && dr == 8 && is_white_piece(transform) && (transform == 'B' || transform == 'C' || transform == 'Q' || transform == 'R'))
+            A[sr][sc] = '-', A[dr][dc] = transform;
         else if ((transform != 'b' || transform != 'c' || transform != 'q' || transform != 'r' || transform != 'B' || transform != 'C' || transform != 'Q' || transform != 'R') && (type == 'p' || type == 'P'))
         {
-            if (fr == 1 || fr == 8)
+            if (dr == 1 || dr == 8)
             {
                 strcpy(msg, "Invalid transformation!");
                 write(fd, msg, strlen(msg));
@@ -821,13 +891,13 @@ int message(int fd, int &verify, char move)
             }
         }
 
-        if (move == 'a' && check('k'))
+        if (move == 'a' && check(A, 'k'))
         {
             strcpy(msg, "Move executed! The enemy's king is in check!");
             s = convert(A);
             bytes = s.size();
         }
-        else if (move == 'b' && check('K'))
+        else if (move == 'b' && check(A, 'K'))
         {
             strcpy(msg, "Move executed! The enemy's king is in check!");
             s = convert(A);
@@ -842,37 +912,21 @@ int message(int fd, int &verify, char move)
 
         // PrintTable(A);
 
-        cout << type << " It was moved from position " << c1 << " " << sr << " to position " << c2 << " " << fr << endl;
-        cout << "Waiting for the other player's move!" << endl;
+        // cout << type << " It was moved from position " << c1 << " " << sr << " to position " << c2 << " " << dr << endl;
+        // cout << "Waiting for the other player's move!" << endl;
 
-        if (fd % 2 == 0)
+        if (bytes && write(opponent_fd, s.c_str(), bytes) < 0)
         {
-            if (bytes && write(fd + 1, s.c_str(), bytes) < 0)
-            {
-                perror("[server] Error in write() to the client.\n");
-                return 0;
-            }
-
-            if (strlen(msg) && write(fd, msg, strlen(msg)) < 0)
-            {
-                perror("[server] Error in write() to the client.\n");
-                return 0;
-            }
+            perror("[server] Error in write() to the client.\n");
+            return 0;
         }
-        else if (fd % 2 == 1)
+
+        if (strlen(msg) && write(fd, msg, strlen(msg)) < 0)
         {
-            if (bytes && write(fd - 1, s.c_str(), bytes) < 0)
-            {
-                perror("[server] Error in write() to the client.\n");
-                return 0;
-            }
-
-            if (strlen(msg) && write(fd, msg, strlen(msg)) < 0)
-            {
-                perror("[server] Error in write() to the client.\n");
-                return 0;
-            }
+            perror("[server] Error in write() to the client.\n");
+            return 0;
         }
+
         verify = 1;
         return bytes;
     }
@@ -890,12 +944,31 @@ char *conv_addr(struct sockaddr_in address)
     return (str);
 }
 
+void print_server_state()
+{
+    queue<Player *> match_making_temp = match_making_players;
+
+    cout << "Match Making Players ";
+    while (match_making_temp.empty() != 1)
+    {
+        Player *player = match_making_temp.front();
+        cout << (*player).fd << '-' << (*player).free << ' ';
+        match_making_temp.pop();
+    }
+    cout << endl;
+
+    vector<Player> temp = online_players;
+    cout << "Players online ";
+    for (Player i : temp)
+        cout << i.fd << ' ';
+    cout << endl;
+}
+
 int main()
 {
     struct sockaddr_in server;
     struct sockaddr_in from;
-    fd_set readfds;
-    fd_set actfds;
+
     struct timeval tv;
     int sd, client;
     int optval = 1;
@@ -903,7 +976,6 @@ int main()
     int nfds;
     pid_t childpid;
     unsigned int len;
-    int v[250] = {0};
 
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
@@ -944,7 +1016,6 @@ int main()
     while (1)
     {
         bcopy((char *)&actfds, (char *)&readfds, sizeof(readfds));
-
         if (select(nfds + 1, &readfds, NULL, NULL, &tv) < 0)
         {
             perror("[server] Error in select().\n");
@@ -970,90 +1041,311 @@ int main()
             FD_SET(client, &actfds);
             printf("[server] Client with descriptor %d has connected, from address %s.\n", client, conv_addr(from));
             fflush(stdout);
+
+            Player player;
+            player.fd = client;
+            player.free = 1;
+            online_players.push_back(player);
+
+            pthread_t tid;
+            // new client connected, make a thread to handle him
+            pthread_create(&tid, NULL, &client_operation, &client);
         }
 
-        if (nfds % 2 == 1 && nfds > 3 && !v[nfds - 1] && !v[nfds])
+        // handling matchmaking (can be put into a separate thread in the future if needed)
+        int i = 0;
+        while (match_making_players.size() >= 2)
         {
-            // cout << a.fd << " " << b.fd << endl;
-            v[nfds - 1] = 1;
-            v[nfds] = 1;
-            if ((childpid = fork()) == 0)
+            Player *player_a = match_making_players.front();
+            match_making_players.pop();
+            Player *player_b = match_making_players.front();
+            match_making_players.pop();
+
+            // change their state to busy (already done when chose to match make)
+            // player_a->free = 0;
+            // player_b->free = 0;
+
+            // cout << "The size now is " << match_making_players.() << endl;
+
+            // thread for managing game play
+            PlayGameThreadData game_data;
+            game_data.player_a = player_a;
+            game_data.player_b = player_b;
+
+            pthread_t tid;
+            pthread_create(&tid, NULL, &play_game, &game_data);
+        }
+    }
+    close(sd);
+}
+
+// Thread function for the matchmaking system
+void match_making_system()
+{
+    while (true)
+    {
+        unique_lock<mutex> lock(queue_mutex);
+
+        // Wait until there are at least two players in the queue
+        queue_condition.wait(lock, []
+                             { return match_making_players.size() >= 2; });
+
+        // Pair the first two players in the queue
+        Player *player_a = match_making_players.front();
+        match_making_players.pop();
+        Player *player_b = match_making_players.front();
+        match_making_players.pop();
+
+        lock.unlock();
+
+        // thread for managing game play
+        PlayGameThreadData game_data;
+        game_data.player_a = player_a;
+        game_data.player_b = player_b;
+
+        pthread_t tid;
+        int thread_check = pthread_create(&tid, NULL, &play_game, &game_data);
+        if (thread_check != 0)
+        {
+            cerr << "Failed to create thread." << endl;
+            return;
+        }
+
+        // Wait for the game thread to finish
+        // thread_check = pthread_join(tid, NULL);
+        // if (thread_check != 0)
+        // {
+        //     cerr << "Failed to join thread." << endl;
+        //     return;
+        // }
+    }
+}
+
+void *play_game(void *arg)
+{
+    char A[9][9];
+    int vizA[4] = {0};
+    int vizB[4] = {0};
+
+    PlayGameThreadData *data = (PlayGameThreadData *)arg;
+
+    Player *a = (data->player_a);
+    Player(*b) = (data->player_b);
+    create_table(A);
+    (*a).round = 1;
+    (*b).round = 0;
+
+    int ft = 0, current_fd;
+    // Working ... need to constantly check surrender message from both players
+    while (1)
+    {
+        cout << "Game between " << (*a).fd << " and " << (*b).fd << endl;
+
+        if ((*a).round == 1)
+        {
+            current_fd = (*a).fd;
+            int verify = 0;
+
+            if (!ft)
             {
-                create_table(A);
-                // PrintTable(A);
-                cout << "The game has started!" << endl;
-                Player a;
-                Player b;
-                a.round = 1;
-                a.fd = nfds - 1;
-                b.round = 0;
-                b.fd = nfds;
-                close(sd);
-                int ft = 0;
-                while (1)
+                string s;
+                s = convert(A);
+                int bytes = s.size();
+                if (bytes && send(current_fd, s.c_str(), bytes, 0) < 0)
                 {
-                    if (a.round == 1)
-                    {
-                        fd = a.fd;
-                        int verify = 0;
-                        if (fd != sd)
-                        {
-                            if (!ft)
-                            {
-                                string s;
-                                s = convert(A);
-                                int bytes = s.size();
-                                if (bytes && write(fd, s.c_str(), bytes) < 0)
-                                {
-                                    perror("[server] Error in write() to the client.\n");
-                                    return 0;
-                                }
-                                ft = 1;
-                            }
-                            if (message(fd, verify, 'a') == -1)
-                            {
-                                close(fd);
-                                FD_CLR(fd, &actfds);
-                                close(fd + 1);
-                                FD_CLR(fd + 1, &actfds);
-                                v[a.fd] = 0;
-                                v[b.fd] = 0;
-                                exit(0);
-                            }
-                            else if (verify == 1)
-                            {
-                                a.round = 0;
-                                b.round = 1;
-                                verify = 0;
-                            }
-                        }
-                    }
-                    if (b.round == 1)
-                    {
-                        fd = b.fd;
-                        int verify = 0;
-                        if (fd != sd)
-                        {
-                            if (message(fd, verify, 'b') == -1)
-                            {
-                                close(fd);
-                                FD_CLR(fd, &actfds);
-                                close(fd - 1);
-                                FD_CLR(fd - 1, &actfds);
-                                v[a.fd] = 0;
-                                v[b.fd] = 0;
-                                exit(0);
-                            }
-                            else if (verify == 1)
-                            {
-                                b.round = 0;
-                                a.round = 1;
-                                verify = 0;
-                            }
-                        }
-                    }
+                    perror("[server] Error in send() to the client.\n");
+                    return 0;
                 }
+                ft = 1;
+            }
+            if (message(A, vizA, vizB, current_fd, (*b).fd, verify, 'a') == -1)
+            {
+                // close(current_fd);
+                // // Working ...
+                // FD_CLR(current_fd, &actfds);
+                // close(b.fd);
+                // FD_CLR(b.fd, &actfds);
+                // v[a.fd] = 0;
+                // v[b.fd] = 0;
+                // exit(0);
+                break;
+            }
+            else if (verify == 1)
+            {
+                (*a).round = 0;
+                (*b).round = 1;
+                verify = 0;
+            }
+        }
+        if ((*b).round == 1)
+        {
+            current_fd = (*b).fd;
+            int verify = 0;
+            if (message(A, vizA, vizB, current_fd, (*a).fd, verify, 'b') == -1)
+            {
+                // // Working ...
+                // close(current_fd);
+                // FD_CLR(current_fd, &actfds);
+                // close(a.fd);
+                // FD_CLR(a.fd, &actfds);
+                // v[a.fd] = 0;
+                // v[b.fd] = 0;
+                // exit(0);
+                break;
+            }
+            else if (verify == 1)
+            {
+                (*b).round = 0;
+                (*a).round = 1;
+                verify = 0;
             }
         }
     }
+    // game finished, make them free
+    a->free = 1;
+    b->free = 1;
+    cout << a->fd << " and " << b->fd << " are free " << endl;
+    int *result = new int(42);
+    pthread_exit(result);
 }
+
+void *client_operation(void *arg)
+{
+    int client_fd = *((int *)arg);
+    // Working ...
+    // Idea: Make an infinite loop the loop will check if there is an incoming match challange, or if the user select any option
+    // and for the actual game, maybe make another thread/process specifically for that game
+    // reference: https://chat.openai.com/share/41ad436c-48d2-450f-95e2-d3a0d93ab8f1
+    Player *this_player;
+    for (Player player : online_players)
+    {
+        if (player.fd == client_fd)
+        {
+            this_player = &player;
+            break;
+        }
+    }
+
+    int connected = 1;
+    while (connected)
+    {
+        cout << "waiting for " << client_fd << " to choose an option" << endl;
+        int option;
+        string temp;
+        if (recv(client_fd, &option, sizeof(option), 0) <= 0)
+        {
+            cout << "Error occurred while receiving option from client " << client_fd << endl;
+            close(client_fd);
+        }
+        cout << "Client with fd " << client_fd << " chose " << option << endl;
+        print_server_state();
+
+        switch (option)
+        {
+        case 1: // Random matchmaking:
+            match_making_players.push(this_player);
+            this_player->free = 0;
+            while (1)
+            {
+                if (this_player->free == 1)
+                    break;
+            }
+            break;
+        case 2: // Play a friend
+            break;
+        case 3: // Challenge a friend
+            cout << "Got here" << endl;
+            disconnect_player(client_fd);
+            connected = 0;
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+// the commented code below is implementation of playing a chess game between 2 players
+//     if (nfds % 2 == 1 && nfds > 3 && !v[nfds - 1] && !v[nfds])
+//     {
+//         // cout << a.fd << " " << b.fd << endl;
+//         v[nfds - 1] = 1;
+//         v[nfds] = 1;
+//         if ((childpid = fork()) == 0)
+//         {
+//             create_table(A);
+//             // PrintTable(A);
+//             cout << "The game has started!" << endl;
+//             Player a;
+//             Player b;
+//             a.round = 1;
+//             a.fd = nfds - 1;
+//             b.round = 0;
+//             b.fd = nfds;
+//             close(sd);
+//             int ft = 0;
+//             while (1)
+//             {
+//                 if (a.round == 1)
+//                 {
+//                     fd = a.fd;
+//                     int verify = 0;
+//                     if (fd != sd)
+//                     {
+//                         if (!ft)
+//                         {
+//                             string s;
+//                             s = convert(A);
+//                             int bytes = s.size();
+//                             if (bytes && write(fd, s.c_str(), bytes) < 0)
+//                             {
+//                                 perror("[server] Error in write() to the client.\n");
+//                                 return 0;
+//                             }
+//                             ft = 1;
+//                         }
+//                         if (message(fd, verify, 'a') == -1)
+//                         {
+//                             close(fd);
+//                             FD_CLR(fd, &actfds);
+//                             close(fd + 1);
+//                             FD_CLR(fd + 1, &actfds);
+//                             v[a.fd] = 0;
+//                             v[b.fd] = 0;
+//                             exit(0);
+//                         }
+//                         else if (verify == 1)
+//                         {
+//                             a.round = 0;
+//                             b.round = 1;
+//                             verify = 0;
+//                         }
+//                     }
+//                 }
+//                 if (b.round == 1)
+//                 {
+//                     fd = b.fd;
+//                     int verify = 0;
+//                     if (fd != sd)
+//                     {
+//                         if (message(fd, verify, 'b') == -1)
+//                         {
+//                             close(fd);
+//                             FD_CLR(fd, &actfds);
+//                             close(fd - 1);
+//                             FD_CLR(fd - 1, &actfds);
+//                             v[a.fd] = 0;
+//                             v[b.fd] = 0;
+//                             exit(0);
+//                         }
+//                         else if (verify == 1)
+//                         {
+//                             b.round = 0;
+//                             a.round = 1;
+//                             verify = 0;
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// }
