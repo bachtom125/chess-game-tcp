@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master"
+CMAKE_SOURCE_DIR = "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp"
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build"
+CMAKE_BINARY_DIR = "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build"
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build/CMakeFiles" "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build//CMakeFiles/progress.marks"
+	$(CMAKE_COMMAND) -E cmake_progress_start "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build/CMakeFiles" "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build//CMakeFiles/progress.marks"
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build/CMakeFiles" 0
+	$(CMAKE_COMMAND) -E cmake_progress_start "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build/CMakeFiles" 0
 .PHONY : all
 
 # The main clean target
@@ -129,29 +129,66 @@ server/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/build
 .PHONY : server/fast
 
-server-remake/server.o: server-remake/server.cpp.o
-.PHONY : server-remake/server.o
+#=============================================================================
+# Target rules for targets named client
+
+# Build rule for target.
+client: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 client
+.PHONY : client
+
+# fast build rule for target.
+client/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/build
+.PHONY : client/fast
+
+client2.o: client2.cpp.o
+.PHONY : client2.o
 
 # target to build an object file
-server-remake/server.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server-remake/server.cpp.o
-.PHONY : server-remake/server.cpp.o
+client2.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client2.cpp.o
+.PHONY : client2.cpp.o
 
-server-remake/server.i: server-remake/server.cpp.i
-.PHONY : server-remake/server.i
+client2.i: client2.cpp.i
+.PHONY : client2.i
 
 # target to preprocess a source file
-server-remake/server.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server-remake/server.cpp.i
-.PHONY : server-remake/server.cpp.i
+client2.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client2.cpp.i
+.PHONY : client2.cpp.i
 
-server-remake/server.s: server-remake/server.cpp.s
-.PHONY : server-remake/server.s
+client2.s: client2.cpp.s
+.PHONY : client2.s
 
 # target to generate assembly for a file
-server-remake/server.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server-remake/server.cpp.s
-.PHONY : server-remake/server.cpp.s
+client2.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client2.cpp.s
+.PHONY : client2.cpp.s
+
+server.o: server.cpp.o
+.PHONY : server.o
+
+# target to build an object file
+server.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server.cpp.o
+.PHONY : server.cpp.o
+
+server.i: server.cpp.i
+.PHONY : server.i
+
+# target to preprocess a source file
+server.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server.cpp.i
+.PHONY : server.cpp.i
+
+server.s: server.cpp.s
+.PHONY : server.s
+
+# target to generate assembly for a file
+server.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server.cpp.s
+.PHONY : server.cpp.s
 
 # Help Target
 help:
@@ -161,10 +198,14 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... client"
 	@echo "... server"
-	@echo "... server-remake/server.o"
-	@echo "... server-remake/server.i"
-	@echo "... server-remake/server.s"
+	@echo "... client2.o"
+	@echo "... client2.i"
+	@echo "... client2.s"
+	@echo "... server.o"
+	@echo "... server.i"
+	@echo "... server.s"
 .PHONY : help
 
 

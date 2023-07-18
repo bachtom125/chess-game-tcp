@@ -15,6 +15,10 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <limits>
+#include <nlohmann/json.hpp>
+#include <fstream> // Add this line
+#include <condition_variable>
+
 /* int board[8][8] =
 { -1,-2,-3,-4,-5,-3,-2,-1,
  -6,-6,-6,-6,-6,-6,-6,-6,
@@ -29,6 +33,39 @@
 extern int errno;
 
 using namespace std;
+#define PORT 3000
+#define BUFF_SIZE 1024
+using json = nlohmann::json;
+
+extern int errno;
+
+enum class RequestType
+{
+    Login,
+    Move,
+    SomeOtherRequest,
+    // Add more request types as needed
+};
+
+bool send_request(RequestType type, const json &request_data, int sd)
+{
+    // Create the request JSON
+    cout << "Request Sent: " << request_data << endl;
+    json request;
+    request["type"] = static_cast<int>(type);
+    request["data"] = request_data;
+
+    // Serialize the request JSON
+    string serializedRequest = request.dump();
+    cout << "about to send this bro" << serializedRequest << endl;
+    if (send(sd, serializedRequest.c_str(), serializedRequest.size(), 0) == -1)
+    {
+        cerr << "Error occurred while sending the request to the server." << endl;
+        close(sd);
+        return 0;
+    }
+    return 1;
+}
 
 // need to add client receiving results sent by server after the game's over
 bool in_game = 0;
@@ -182,12 +219,19 @@ void *send_game_data(void *arg)
         // Data available in stdin, read and write to the server
         int bytes = read(0, msg, 100);
         msg[bytes] = '\0';
-        if (write(sd, msg, 100) <= 0)
+
+        json move_request;
+        move_request["move"] = msg;
+        if (send_request(RequestType::Move, move_request, sd) == 0)
         {
-            perror("[client]Error in write() to server.\n");
-            break;
+            cout << "Failed to send move" << endl;
         }
-        cout << "JUST WROTE" << msg << endl;
+        // if (write(sd, msg, 100) <= 0)
+        // {
+        //     perror("[client]Error in write() to server.\n");
+        //     break;
+        // }
+        // cout << "JUST WROTE" << msg << endl;
     }
 
     int *result = new int(42);
