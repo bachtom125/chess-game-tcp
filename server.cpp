@@ -32,9 +32,16 @@ enum class RequestType
     MatchMaking,
     Challenge,
     Move,
-
+    GetOnlinePlayersList,
     SomeOtherRequest,
     // Add more request types as needed
+};
+
+enum class RespondType
+{
+    MoveVerdict,       // Working ... needs implementing
+    GameResult,        // Working ... needs implementing
+    OnlinePlayersList, // Working ... needs implementing
 };
 
 struct User
@@ -48,7 +55,7 @@ struct Player
 {
     // Working ....
     // Need to all User field to everywhere containing Player, and then proceed with handleChanllengeRequest()
-    struct User *user;
+    // struct User *user;
     int round;
     int fd;
     int free;
@@ -148,6 +155,27 @@ bool isUserValid(const string &username, const string &password)
 
     return false;
 }
+
+bool send_respond(RespondType type, const json &respond_data, int sd)
+{
+    // Create the respond JSON
+    cout << "Respond Sent: " << respond_data << endl;
+    json respond;
+    respond["type"] = static_cast<int>(type);
+    respond["data"] = respond_data;
+
+    // Serialize the respond JSON
+    string serializedRespond = respond.dump();
+    cout << "about to send this bro" << serializedRespond << endl;
+    if (send(sd, serializedRespond.c_str(), serializedRespond.size(), 0) == -1)
+    {
+        cerr << "Error occurred while sending the respond to the server." << endl;
+        close(sd);
+        return 0;
+    }
+    return 1;
+}
+
 void handleMatchMakingRequest(const json &requestData, int client_fd)
 {
     // need to check if logged in
@@ -171,22 +199,41 @@ void handleMatchMakingRequest(const json &requestData, int client_fd)
     }
 }
 
-void send_player_list(int client_fd)
-{
-}
-
 void handleChallengeRequest(const json &requestData, int client_fd)
 {
-    if (!requestData.contains("opponent"))
+
+    // make a game with the recieved board
+}
+
+void handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
+{
+    // json respond_type;
+    // vector<Player> other_online_players;
+    // copy_if(online_players.begin(), online_players.end(), back_inserter(other_online_players),
+    //         [client_fd](Player player)
+    //         { return player.fd != client_fd; });
+
+    // respond_type["online_players_list"] = other_online_players;
+
+    json respond_type;
+
+    for (const auto &player : online_players)
     {
-        // Working ...
-        // send client list to user
+        if (player.fd == client_fd)
+            continue;
+        json playerJson;
+        playerJson["fd"] = player.fd;
+        playerJson["free"] = player.free;
+        respond_type.push_back(playerJson);
     }
-    else
+    cout << "GOT HERE THO" << endl;
+
+    if (send_respond(RespondType::OnlinePlayersList, respond_type, client_fd) == 0)
     {
-        // make a game with the recieved board
+        cout << "Failed to send online players list to " << client_fd << endl;
     }
 }
+
 void handleLoginRequest(const json &requestData, int client_fd)
 {
     string username = requestData["username"];
@@ -256,7 +303,7 @@ json convert_to_json(string buffer, int bytes)
     //     continue;
     // }
     // Parse the received data into JSON
-    // string request_data(buffer, bytes);
+    // string respond_type(buffer, bytes);
     string request_data = buffer;
     cout << request_data << endl;
     // Find the position of the first opening brace '{'
@@ -1463,16 +1510,17 @@ void *client_operation(void *arg)
                 cout << "Received matchmaking request from " << client_fd << endl;
                 handleMatchMakingRequest(jsonData["data"], client_fd);
             }
+            else if (requestType == static_cast<int>(RequestType::GetOnlinePlayersList))
+            {
+                cout << "Received online players list request from " << client_fd << endl;
+                handleGetOnlinePlayersListRequest(jsonData["data"], client_fd);
+            }
             else if (requestType == static_cast<int>(RequestType::Challenge))
             {
                 cout << "Received challenge request from " << client_fd << endl;
                 handleChallengeRequest(jsonData["data"], client_fd);
             }
-            // else if (requestType == static_cast<int>(RequestType::SomeOtherRequest))
-            // {
-            //     cout << "Received some other request" << endl;
-            //     handleSomeOtherRequest(jsonData["data"]);
-            // }
+
             // else
             // {
             //     // Handle unknown or unsupported request types

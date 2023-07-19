@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -isystem "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/json-develop/include"
+CXX_INCLUDES = -isystem "/mnt/e/TOM/HUST/20222/Network Programming/Project/json-develop/include"
 
 CXX_FLAGS = -std=gnu++14
 

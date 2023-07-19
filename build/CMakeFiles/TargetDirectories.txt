@@ -1,4 +1,4 @@
-/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build/CMakeFiles/server.dir
-/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build/CMakeFiles/client.dir
-/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build/CMakeFiles/edit_cache.dir
-/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build/CMakeFiles/rebuild_cache.dir
+/mnt/e/TOM/HUST/20222/Network Programming/Project/chess-game-tcp/build/CMakeFiles/server.dir
+/mnt/e/TOM/HUST/20222/Network Programming/Project/chess-game-tcp/build/CMakeFiles/client.dir
+/mnt/e/TOM/HUST/20222/Network Programming/Project/chess-game-tcp/build/CMakeFiles/edit_cache.dir
+/mnt/e/TOM/HUST/20222/Network Programming/Project/chess-game-tcp/build/CMakeFiles/rebuild_cache.dir

@@ -17,6 +17,7 @@
 #include <limits>
 #include <nlohmann/json.hpp>
 #include <fstream> // Add this line
+#include <vector>
 #include <condition_variable>
 
 /* int board[8][8] =
@@ -39,13 +40,32 @@ using json = nlohmann::json;
 
 extern int errno;
 
+struct Player
+{
+    // Working ....
+    // Need to all User field to everywhere containing Player, and then proceed with handleChanllengeRequest()
+    // struct User *user;
+    int round;
+    int fd;
+    int free;
+};
+
 enum class RequestType
 {
     Login,
-    Move,
+    MatchMaking,
     Challenge,
+    Move,
+    GetOnlinePlayersList,
     SomeOtherRequest,
     // Add more request types as needed
+};
+
+enum class RespondType
+{
+    MoveVerdict,       // Working ... needs implementing
+    GameResult,        // Working ... needs implementing
+    OnlinePlayersList, // Working ... needs implementing
 };
 
 string reverse_convert(int a[8][8])
@@ -123,6 +143,36 @@ bool send_request(RequestType type, const json &request_data, int sd)
         return 0;
     }
     return 1;
+}
+
+json receive_respond(int sd) // get respond and return corresponding json object
+{
+    array<char, 1024> buffer{};
+    ssize_t bytesRead = recv(sd, buffer.data(), buffer.size(), 0);
+    if (bytesRead <= 0)
+    {
+        cerr << "Error receiving data" << endl;
+        close(sd);
+        return NULL;
+    }
+
+    string respond_data(buffer.data(), bytesRead);
+    cout << respond_data << endl;
+
+    size_t bracePos = respond_data.find_first_of('{');
+    if (bracePos != string::npos)
+    {
+        // Extract the substring from the brace position until the end of the string
+        string jsonSubstring = respond_data.substr(bracePos);
+
+        // Parse the extracted JSON substring
+        json json_data = json::parse(jsonSubstring);
+
+        // Determine the type of request and dispatch to the appropriate handler
+        return json_data;
+    }
+
+    return NULL;
 }
 
 // need to add client receiving results sent by server after the game's over
@@ -378,7 +428,7 @@ int main(int argc, char *argv[])
         fflush(stdin);
         option = menu();
 
-        json move_request;
+        json move_request, get_online_players_request, received_data;
         int board[8][8] =
             {-1, -2, -3, -4, -5, -3, -2, -1,
              -6, -6, -6, -6, -6, -6, -6, -6,
@@ -395,9 +445,9 @@ int main(int argc, char *argv[])
         {
         case 1:
             move_request["sd"] = sd;
-            if (send_request(RequestType::Move, move_request, sd) == 0)
+            if (send_request(RequestType::MatchMaking, move_request, sd) == 0)
             {
-                cout << "Failed to send move" << endl;
+                cout << "Failed to send matchmaking request" << endl;
                 return 1;
             }
 
@@ -420,17 +470,45 @@ int main(int argc, char *argv[])
             pthread_join(send_tid, nullptr);
             break;
         case 2:
-
-            s = reverse_convert(board);
-            // need to choose a player first
-            move_request["board"] = s;
-            if (send_request(RequestType::Challenge, move_request, sd) == 0)
+            // first get the online players list
+            if (send_request(RequestType::GetOnlinePlayersList, get_online_players_request, sd) == 0)
             {
-                cout << "Failed to send move" << endl;
+                cout << "Failed to send request" << endl;
                 return 1;
             }
-            cout << "Challenging another player..." << endl;
+            received_data = receive_respond(sd); // get player list
+            if (!received_data.empty())
+            {
+                if (received_data["type"] == RespondType::OnlinePlayersList)
+                {
+                    json online_players = received_data["data"];
+                    cout << "Online Players: ";
+                    for (json player : online_players)
+                    {
+                        cout << player["fd"] << ' ';
+                    }
+                    cout << endl;
+                }
+                else
+                {
+                    cout << "Wrong respond types" << endl;
+                }
+            }
+
+            // now choose 1
+            int chosen_player = received_data["data"][0]["fd"];
+            // Working ... send challenge request containing a board
             break;
+        // s = reverse_convert(board);
+        // // need to choose a player first
+        // move_request["board"] = s;
+        // if (send_request(RequestType::Challenge, move_request, sd) == 0)
+        // {
+        //     cout << "Failed to send move" << endl;
+        //     return 1;
+        // }
+        // cout << "Challenging another player..." << endl;
+        // break;
         case 3:
             cout << "Exiting..." << endl;
             return 0;
