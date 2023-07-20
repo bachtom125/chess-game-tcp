@@ -136,7 +136,7 @@ void ChessBoardScreen::update()
 void ChessBoardScreen::draw()
 {
     /////animation///////
-    int n = 0;
+    /*int n = 0;
     for (int i = 0; i < 32; i++)
         if (f[i].getPosition() == oldPos)
             n = i;
@@ -152,7 +152,7 @@ void ChessBoardScreen::draw()
         window.draw(f[n]);
         for (int i = 0; i < 32; i++)
             f[i].move(-offset);
-    }
+    }*/
 }
 
 void ChessBoardScreen::loadPosition()
