@@ -29,13 +29,35 @@ extern int errno;
 enum class RequestType
 {
     Login,
+    Logout,
+    MatchMaking,
+    Challenge,
     Move,
+    GetOnlinePlayersList,
     SomeOtherRequest,
     // Add more request types as needed
 };
 
+enum class RespondType
+{
+    LogoutSuccess,
+    MoveVerdict,       // Working ... needs implementing
+    GameResult,        // Working ... needs implementing
+    OnlinePlayersList, // Working ... needs implementing
+};
+
+struct User
+{
+    string username;
+    string password;
+    int elo;
+};
+
 struct Player
 {
+    // Working ....
+    // Need to all User field to everywhere containing Player, and then proceed with handleChanllengeRequest()
+    // struct User *user;
     int round;
     int fd;
     int free;
@@ -45,10 +67,10 @@ fd_set readfds;
 fd_set actfds;
 int v[250] = {0};
 
-vector<Player> online_players;
+vector<Player *> online_players;
 queue<Player *> match_making_players;
 
-mutex queue_mutex;
+mutex queue_mutex, vector_mutex;
 condition_variable queue_condition;
 struct PlayGameThreadData
 {
@@ -58,18 +80,207 @@ struct PlayGameThreadData
 
 void *client_operation(void *);
 void *play_game(void *);
+void *match_making_system(void *);
+
+bool disconnect_player(int);
+
+constexpr const char *ACCOUNTS_FILE = "accounts.txt";
+
+Player *find_online_player(int client_fd)
+{
+    for (Player *player : online_players)
+    {
+        if (player->fd == client_fd)
+        {
+            cout << "He is " << &player << endl;
+            return player;
+        }
+    }
+    return NULL;
+}
+
+vector<User> readAccountsFile()
+{
+    vector<User> users;
+    ifstream accountsFile("accounts.txt");
+    if (!accountsFile)
+    {
+        cerr << "Failed to open accounts file" << endl;
+        return users;
+    }
+
+    string line;
+    while (getline(accountsFile, line))
+    {
+        istringstream iss(line);
+        User user;
+        if (iss >> user.username >> user.password >> user.elo)
+        {
+            users.push_back(user);
+        }
+    }
+
+    return users;
+}
+
+User findUserByUsername(const string &username)
+{
+    vector<User> users = readAccountsFile();
+    for (const User &user : users)
+    {
+        if (user.username == username)
+        {
+            return user;
+        }
+    }
+
+    // Return a default-constructed User object if the user is not found
+    return User();
+}
+
+bool isUserValid(const string &username, const string &password)
+{
+    ifstream accounts(ACCOUNTS_FILE);
+    if (!accounts)
+    {
+        cerr << "Failed to open accounts file" << endl;
+        return false;
+    }
+
+    string line;
+    while (getline(accounts, line))
+    {
+        string storedUsername, storedPassword;
+        istringstream iss(line);
+        if (iss >> storedUsername >> storedPassword)
+        {
+            if (storedUsername == username && storedPassword == password)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool send_respond(RespondType type, const json &respond_data, int sd)
+{
+    // Create the respond JSON
+    cout << "Respond Sent: " << respond_data << endl;
+    json respond;
+    respond["type"] = static_cast<int>(type);
+    respond["data"] = respond_data;
+
+    // Serialize the respond JSON
+    string serializedRespond = respond.dump();
+    cout << "about to send this bro" << serializedRespond << endl;
+    if (send(sd, serializedRespond.c_str(), serializedRespond.size(), 0) == -1)
+    {
+        cerr << "Error occurred while sending the respond to the server." << endl;
+        close(sd);
+        return 0;
+    }
+    return 1;
+}
+
+void handleMatchMakingRequest(const json &requestData, int client_fd)
+{
+    // need to check if logged in
+
+    Player *this_player = find_online_player(client_fd);
+    cout << "and he is " << client_fd << ':' << this_player << endl;
+    if (!this_player)
+    {
+        printf("Player not online");
+        // hanlde this case
+        return;
+    }
+
+    // if reaches here, then player is both logged in and online
+    printf("This player %d\n", this_player->fd);
+    match_making_players.push(this_player);
+    this_player->free = 0;
+    while (1)
+    {
+        if (this_player->free == 1)
+            break;
+    }
+}
+
+void handleChallengeRequest(const json &requestData, int client_fd)
+{
+    // get the board
+    // send notification to the other player
+    // make a game with the recieved board
+}
+
+bool handleLogoutRequest(const json &requestData, int client_fd)
+{
+    return (disconnect_player(client_fd));
+}
+
+void handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
+{
+
+    json respond_type;
+
+    for (const auto *player : online_players)
+    {
+        if (player->fd == client_fd)
+            continue;
+        json playerJson;
+        playerJson["fd"] = player->fd;
+        playerJson["free"] = player->free;
+        respond_type.push_back(playerJson);
+    }
+    cout << "GOT HERE THO" << endl;
+
+    if (send_respond(RespondType::OnlinePlayersList, respond_type, client_fd) == 0)
+    {
+        cout << "Failed to send online players list to " << client_fd << endl;
+    }
+}
+
+void handleLoginRequest(const json &requestData, int client_fd)
+{
+    string username = requestData["username"];
+    string password = requestData["password"];
+
+    cout << username << endl;
+    cout << password << endl;
+
+    // Perform login validation/authentication logic
+    User user = findUserByUsername(username);
+    bool isValid = (user.username == username && user.password == password);
+    // Craft the response JSON
+    json response;
+    response["type"] = static_cast<int>(RequestType::Login);
+    response["success"] = isValid;
+    response["message"] = isValid ? "Login successful" : "Invalid username or password";
+
+    // Serialize the response JSON
+    string responseStr = response.dump();
+
+    // Send the response back to the client
+    if (send(client_fd, responseStr.c_str(), responseStr.size(), 0) == -1)
+    {
+        cerr << "Failed to send response to client" << endl;
+    }
+}
 
 void remove_player_from_matchmaking()
 {
     // Working
 }
 
-void disconnect_player(int fd)
+bool disconnect_player(int fd)
 {
+    cout << "HERE" << endl;
     auto it = online_players.begin();
     while (it != online_players.end())
     {
-        if ((*it).fd == fd)
+        if ((*it)->fd == fd)
             break;
 
         it++;
@@ -83,26 +294,28 @@ void disconnect_player(int fd)
     else
     {
         cout << "Player " << fd << " not found in online player vector list" << endl;
+        return 0;
     }
     FD_CLR(fd, &actfds);
     FD_CLR(fd, &readfds);
     close(fd);
     v[fd] = 0;
+    return 1;
 }
 
 json convert_to_json(string buffer, int bytes)
 {
     // handle before calling ...
-    // std::array<char, 1024> buffer{};
-    // ssize_t bytes = recv(clientSocket, buffer, buffer.size(), 0);
+    // array<char, 1024> buffer{};
+    // ssize_t bytes = recv(client_fd, buffer, buffer.size(), 0);
     // if (bytes <= 0)
     // {
-    //     std::cerr << "Error receiving data" << std::endl;
-    //     close(clientSocket);
+    //     cerr << "Error receiving data" << endl;
+    //     close(client_fd);
     //     continue;
     // }
     // Parse the received data into JSON
-    // string request_data(buffer, bytes);
+    // string respond_type(buffer, bytes);
     string request_data = buffer;
     cout << request_data << endl;
     // Find the position of the first opening brace '{'
@@ -120,7 +333,7 @@ json convert_to_json(string buffer, int bytes)
     // if (requestType == static_cast<int>(RequestType::Login))
     // {
     //     cout << "Received login request" << endl;
-    //     handleLoginRequest(json_data["data"], clientSocket);
+    //     handleLoginRequest(json_data["data"], client_fd);
     // }
     // else if (requestType == static_cast<int>(RequestType::SomeOtherRequest))
     // {
@@ -173,7 +386,7 @@ void create_table(char A[9][9])
     A[1][5] = 'K';
     A[8][5] = 'k';
 
-    // for (i = 1; i <= 8; i++)
+    // for (i = 0; i <= 8; i++)
     // {
     //     for (j = 1; j <= 8; j++)
     //         cout << A[i][j] << ' ';
@@ -696,7 +909,7 @@ void send_result(int loser_fd, int winner_fd)
     cout << "The winner is " << winner_fd << endl;
 }
 
-int message(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, int &verify, char move)
+int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, int &verify, char move)
 {
     string s;
     char buffer[BUFF_SIZE];
@@ -1030,10 +1243,10 @@ void print_server_state()
     }
     cout << endl;
 
-    vector<Player> temp = online_players;
+    vector<Player *> temp = online_players;
     cout << "Players online ";
-    for (Player i : temp)
-        cout << i.fd << ' ';
+    for (Player *i : temp)
+        cout << i->fd << ' ';
     cout << endl;
 }
 
@@ -1086,6 +1299,10 @@ int main()
 
     printf("[server] We are waiting at port %d...\n", PORT);
     fflush(stdout);
+
+    pthread_t match_making_system_tid;
+    pthread_create(&match_making_system_tid, NULL, &match_making_system, NULL);
+
     while (1)
     {
         bcopy((char *)&actfds, (char *)&readfds, sizeof(readfds));
@@ -1115,10 +1332,13 @@ int main()
             printf("[server] Client with descriptor %d has connected, from address %s.\n", client, conv_addr(from));
             fflush(stdout);
 
-            Player player;
-            player.fd = client;
-            player.free = 1;
+            Player *player = new Player;
+            player->fd = client;
+            player->free = 1;
+            cout << "got new one " << &player << ':' << player->fd << endl;
+            unique_lock<mutex> lock(vector_mutex);
             online_players.push_back(player);
+            lock.unlock();
 
             pthread_t tid;
             // new client connected, make a thread to handle him
@@ -1126,42 +1346,43 @@ int main()
         }
 
         // handling matchmaking (can be put into a separate thread in the future if needed)
-        int i = 0;
-        while (match_making_players.size() >= 2)
-        {
-            Player *player_a = match_making_players.front();
-            match_making_players.pop();
-            Player *player_b = match_making_players.front();
-            match_making_players.pop();
+        // int i = 0;
+        // while (match_making_players.size() >= 2)
+        // {
 
-            // change their state to busy (already done when chose to match make)
-            // player_a->free = 0;
-            // player_b->free = 0;
+        //     Player *player_a = match_making_players.front();
+        //     match_making_players.pop();
+        //     Player *player_b = match_making_players.front();
+        //     match_making_players.pop();
+        //     cout << player_a->fd << " and " << player_b->fd << endl;
 
-            // cout << "The size now is " << match_making_players.() << endl;
+        //     // change their state to busy (already done when chose to match make)
+        //     // player_a->free = 0;
+        //     // player_b->free = 0;
 
-            // thread for managing game play
-            PlayGameThreadData game_data;
-            game_data.player_a = player_a;
-            game_data.player_b = player_b;
+        //     // cout << "The size now is " << match_making_players.() << endl;
 
-            pthread_t tid;
-            pthread_create(&tid, NULL, &play_game, &game_data);
-        }
+        //     // thread for managing game play
+        //     PlayGameThreadData game_data;
+        //     game_data.player_a = player_a;
+        //     game_data.player_b = player_b;
+
+        //     cout << "new game between " << player_a->fd << " and " << player_b->fd << endl;
+        //     pthread_t tid;
+        //     pthread_create(&tid, NULL, &play_game, &game_data);
+        // }
     }
     close(sd);
 }
 
 // Thread function for the matchmaking system
-void match_making_system()
+void *match_making_system(void *arg)
 {
     while (true)
     {
+        if (match_making_players.size() < 2)
+            continue;
         unique_lock<mutex> lock(queue_mutex);
-
-        // Wait until there are at least two players in the queue
-        queue_condition.wait(lock, []
-                             { return match_making_players.size() >= 2; });
 
         // Pair the first two players in the queue
         Player *player_a = match_making_players.front();
@@ -1169,6 +1390,7 @@ void match_making_system()
         Player *player_b = match_making_players.front();
         match_making_players.pop();
 
+        cout << "yack" << player_a << ' ' << player_b << endl;
         lock.unlock();
 
         // thread for managing game play
@@ -1181,7 +1403,7 @@ void match_making_system()
         if (thread_check != 0)
         {
             cerr << "Failed to create thread." << endl;
-            return;
+            break;
         }
 
         // Wait for the game thread to finish
@@ -1202,7 +1424,7 @@ void *play_game(void *arg)
 
     PlayGameThreadData *data = (PlayGameThreadData *)arg;
 
-    Player *a = (data->player_a);
+    Player(*a) = (data->player_a);
     Player(*b) = (data->player_b);
     create_table(A);
     (*a).round = 1;
@@ -1231,16 +1453,8 @@ void *play_game(void *arg)
                 }
                 ft = 1;
             }
-            if (message(A, vizA, vizB, current_fd, (*b).fd, verify, 'a') == -1)
+            if (get_move(A, vizA, vizB, current_fd, (*b).fd, verify, 'a') == -1)
             {
-                // close(current_fd);
-                // // Working ...
-                // FD_CLR(current_fd, &actfds);
-                // close(b.fd);
-                // FD_CLR(b.fd, &actfds);
-                // v[a.fd] = 0;
-                // v[b.fd] = 0;
-                // exit(0);
                 break;
             }
             else if (verify == 1)
@@ -1254,16 +1468,8 @@ void *play_game(void *arg)
         {
             current_fd = (*b).fd;
             int verify = 0;
-            if (message(A, vizA, vizB, current_fd, (*a).fd, verify, 'b') == -1)
+            if (get_move(A, vizA, vizB, current_fd, (*a).fd, verify, 'b') == -1)
             {
-                // // Working ...
-                // close(current_fd);
-                // FD_CLR(current_fd, &actfds);
-                // close(a.fd);
-                // FD_CLR(a.fd, &actfds);
-                // v[a.fd] = 0;
-                // v[b.fd] = 0;
-                // exit(0);
                 break;
             }
             else if (verify == 1)
@@ -1285,140 +1491,78 @@ void *play_game(void *arg)
 void *client_operation(void *arg)
 {
     int client_fd = *((int *)arg);
-    // Working ...
-    // Idea: Make an infinite loop the loop will check if there is an incoming match challange, or if the user select any option
-    // and for the actual game, maybe make another thread/process specifically for that game
-    // reference: https://chat.openai.com/share/41ad436c-48d2-450f-95e2-d3a0d93ab8f1
-    Player *this_player;
-    for (Player player : online_players)
-    {
-        if (player.fd == client_fd)
-        {
-            this_player = &player;
-            break;
-        }
-    }
+
+    unique_lock<mutex> lock(vector_mutex);
+    Player *this_player = find_online_player(client_fd);
+    lock.unlock();
 
     int connected = 1;
     while (connected)
     {
-        cout << "waiting for " << client_fd << " to choose an option" << endl;
-        int option;
-        string temp;
-        if (recv(client_fd, &option, sizeof(option), 0) <= 0)
+        array<char, 1024> buffer{};
+        ssize_t bytesRead = recv(client_fd, buffer.data(), buffer.size(), 0);
+        if (bytesRead <= 0)
         {
-            cout << "Error occurred while receiving option from client " << client_fd << endl;
+            cerr << "Error receiving data" << endl;
             close(client_fd);
+            continue;
         }
-        cout << "Client with fd " << client_fd << " chose " << option << endl;
-        print_server_state();
 
-        switch (option)
+        // Parse the received data into JSON
+        string requestData(buffer.data(), bytesRead);
+        cout << requestData << endl;
+        // Find the position of the first opening brace '{'
+        size_t bracePos = requestData.find_first_of('{');
+        if (bracePos != string::npos)
         {
-        case 1: // Random matchmaking:
-            match_making_players.push(this_player);
-            this_player->free = 0;
-            while (1)
+            // Extract the substring from the brace position until the end of the string
+            string jsonSubstring = requestData.substr(bracePos);
+
+            // Parse the extracted JSON substring
+            json jsonData = json::parse(jsonSubstring);
+
+            // Determine the type of request and dispatch to the appropriate handler
+            int requestType = jsonData["type"];
+
+            if (requestType == static_cast<int>(RequestType::Login))
             {
-                if (this_player->free == 1)
-                    break;
+                cout << "Received login request from " << client_fd << endl;
+                handleLoginRequest(jsonData["data"], client_fd);
             }
-            break;
-        case 2: // Play a friend
-            break;
-        case 3: // Challenge a friend
-            cout << "Got here" << endl;
-            disconnect_player(client_fd);
-            connected = 0;
-            break;
-        default:
-            break;
+            else if (requestType == static_cast<int>(RequestType::MatchMaking))
+            {
+                cout << "Received matchmaking request from " << client_fd << endl;
+                handleMatchMakingRequest(jsonData["data"], client_fd);
+            }
+            else if (requestType == static_cast<int>(RequestType::GetOnlinePlayersList))
+            {
+                cout << "Received online players list request from " << client_fd << endl;
+                handleGetOnlinePlayersListRequest(jsonData["data"], client_fd);
+            }
+            else if (requestType == static_cast<int>(RequestType::Challenge))
+            {
+                cout << "Received challenge request from " << client_fd << endl;
+                handleChallengeRequest(jsonData["data"], client_fd);
+            }
+            else if (requestType == static_cast<int>(RequestType::Logout))
+            {
+                cout << "Received logout request from " << client_fd << endl;
+                if (handleLogoutRequest(jsonData["data"], client_fd))
+                    connected = 0;
+            }
+
+            // else
+            // {
+            //     // Handle unknown or unsupported request types
+            //     cerr << "Unknown request type: " << requestType << endl;
+            // }
         }
+        else
+        {
+            // Handle the case where no opening brace is found
+            cerr << "Invalid request data: " << requestData << endl;
+        }
+
+        print_server_state();
     }
 }
-
-// the commented code below is implementation of playing a chess game between 2 players
-//     if (nfds % 2 == 1 && nfds > 3 && !v[nfds - 1] && !v[nfds])
-//     {
-//         // cout << a.fd << " " << b.fd << endl;
-//         v[nfds - 1] = 1;
-//         v[nfds] = 1;
-//         if ((childpid = fork()) == 0)
-//         {
-//             create_table(A);
-//             // PrintTable(A);
-//             cout << "The game has started!" << endl;
-//             Player a;
-//             Player b;
-//             a.round = 1;
-//             a.fd = nfds - 1;
-//             b.round = 0;
-//             b.fd = nfds;
-//             close(sd);
-//             int ft = 0;
-//             while (1)
-//             {
-//                 if (a.round == 1)
-//                 {
-//                     fd = a.fd;
-//                     int verify = 0;
-//                     if (fd != sd)
-//                     {
-//                         if (!ft)
-//                         {
-//                             string s;
-//                             s = convert(A);
-//                             int bytes = s.size();
-//                             if (bytes && write(fd, s.c_str(), bytes) < 0)
-//                             {
-//                                 perror("[server] Error in write() to the client.\n");
-//                                 return 0;
-//                             }
-//                             ft = 1;
-//                         }
-//                         if (message(fd, verify, 'a') == -1)
-//                         {
-//                             close(fd);
-//                             FD_CLR(fd, &actfds);
-//                             close(fd + 1);
-//                             FD_CLR(fd + 1, &actfds);
-//                             v[a.fd] = 0;
-//                             v[b.fd] = 0;
-//                             exit(0);
-//                         }
-//                         else if (verify == 1)
-//                         {
-//                             a.round = 0;
-//                             b.round = 1;
-//                             verify = 0;
-//                         }
-//                     }
-//                 }
-//                 if (b.round == 1)
-//                 {
-//                     fd = b.fd;
-//                     int verify = 0;
-//                     if (fd != sd)
-//                     {
-//                         if (message(fd, verify, 'b') == -1)
-//                         {
-//                             close(fd);
-//                             FD_CLR(fd, &actfds);
-//                             close(fd - 1);
-//                             FD_CLR(fd - 1, &actfds);
-//                             v[a.fd] = 0;
-//                             v[b.fd] = 0;
-//                             exit(0);
-//                         }
-//                         else if (verify == 1)
-//                         {
-//                             b.round = 0;
-//                             a.round = 1;
-//                             verify = 0;
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
