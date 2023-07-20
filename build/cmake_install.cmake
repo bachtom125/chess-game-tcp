@@ -1,4 +1,4 @@
-# Install script for directory: /mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp
+# Install script for directory: /mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/mnt/c/Users/ACER/Documents/Network Programming/Course PRJ/TCP-Chess-master/TCP-Chess-master/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

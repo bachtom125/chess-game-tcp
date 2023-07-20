@@ -267,7 +267,7 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
   /usr/include/c++/11/bits/parse_numbers.h \
   /usr/include/c++/11/bits/std_mutex.h \
   /usr/include/c++/11/bits/unique_lock.h \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/json.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/json.hpp \
   /usr/include/c++/11/cstddef \
   /usr/include/c++/11/functional \
   /usr/include/c++/11/bits/refwrap.h \
@@ -288,9 +288,9 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
   /usr/include/c++/11/bits/atomic_base.h \
   /usr/include/c++/11/bits/atomic_lockfree_defines.h \
   /usr/include/c++/11/backward/auto_ptr.h \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/adl_serializer.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/abi_macros.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/conversions/from_json.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/adl_serializer.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/abi_macros.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/conversions/from_json.hpp \
   /usr/include/c++/11/forward_list \
   /usr/include/c++/11/bits/forward_list.h \
   /usr/include/c++/11/bits/forward_list.tcc \
@@ -325,49 +325,49 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
   /usr/include/c++/11/bits/gslice_array.h \
   /usr/include/c++/11/bits/mask_array.h \
   /usr/include/c++/11/bits/indirect_array.h \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/exceptions.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/value_t.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/macro_scope.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/detected.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/void_t.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/thirdparty/hedley/hedley.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/exceptions.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/value_t.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/macro_scope.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/detected.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/void_t.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/thirdparty/hedley/hedley.hpp \
   /usr/include/c++/11/version \
   /usr/include/c++/11/cassert \
   /usr/include/assert.h \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/string_escape.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/input/position_t.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/cpp_future.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/type_traits.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/iterators/iterator_traits.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/call_std/begin.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/call_std/end.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/json_fwd.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/string_concat.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/string_escape.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/input/position_t.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/cpp_future.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/type_traits.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/iterators/iterator_traits.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/call_std/begin.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/call_std/end.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/json_fwd.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/string_concat.hpp \
   /usr/include/c++/11/cstring \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/identity_tag.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/std_fs.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/conversions/to_json.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/iterators/iteration_proxy.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/byte_container_with_subtype.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/hash.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/input/binary_reader.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/input/input_adapters.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/identity_tag.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/std_fs.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/conversions/to_json.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/iterators/iteration_proxy.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/byte_container_with_subtype.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/hash.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/input/binary_reader.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/input/input_adapters.hpp \
   /usr/include/c++/11/numeric \
   /usr/include/c++/11/bits/stl_numeric.h \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/input/json_sax.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/input/lexer.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/is_sax.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/input/parser.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/iterators/internal_iterator.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/iterators/primitive_iterator.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/iterators/iter_impl.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/iterators/json_reverse_iterator.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/json_custom_base_class.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/json_pointer.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/json_ref.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/output/binary_writer.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/output/output_adapters.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/output/serializer.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/input/json_sax.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/input/lexer.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/is_sax.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/input/parser.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/iterators/internal_iterator.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/iterators/primitive_iterator.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/iterators/iter_impl.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/iterators/json_reverse_iterator.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/json_custom_base_class.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/json_pointer.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/json_ref.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/output/binary_writer.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/output/output_adapters.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/output/serializer.hpp \
   /usr/include/c++/11/iomanip \
   /usr/include/c++/11/locale \
   /usr/include/c++/11/bits/locale_facets_nonio.h \
@@ -379,18 +379,18 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
   /usr/include/c++/11/bits/quoted_string.h \
   /usr/include/c++/11/sstream \
   /usr/include/c++/11/bits/sstream.tcc \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/conversions/to_chars.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/ordered_map.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/macro_unscope.hpp \
-  /mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/thirdparty/hedley/hedley_undef.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/conversions/to_chars.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/ordered_map.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/macro_unscope.hpp \
+  /mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/thirdparty/hedley/hedley_undef.hpp \
   /usr/include/c++/11/condition_variable
 
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/macro_unscope.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/thirdparty/hedley/hedley_undef.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/ordered_map.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/ordered_map.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/conversions/to_chars.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/conversions/to_chars.hpp:
 
 /usr/include/c++/11/sstream:
 
@@ -406,49 +406,41 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/c++/11/bits/locale_facets_nonio.h:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/output/serializer.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/output/serializer.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/output/binary_writer.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/output/binary_writer.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/json_ref.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/json_pointer.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/json_pointer.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/iterators/internal_iterator.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/iterators/internal_iterator.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/input/parser.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/is_sax.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/is_sax.hpp:
 
 /usr/include/c++/11/bits/stl_numeric.h:
 
 /usr/include/c++/11/numeric:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/input/input_adapters.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/input/input_adapters.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/hash.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/hash.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/byte_container_with_subtype.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/byte_container_with_subtype.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/iterators/iteration_proxy.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/std_fs.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/conversions/to_json.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/string_concat.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/std_fs.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/json_fwd.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/identity_tag.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/call_std/end.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/json_fwd.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/call_std/begin.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/call_std/end.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/type_traits.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/call_std/begin.hpp:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/iterators/iterator_traits.hpp:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/type_traits.hpp:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/cpp_future.hpp:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/string_escape.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/string_escape.hpp:
 
 /usr/include/assert.h:
 
@@ -456,13 +448,13 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/c++/11/version:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/thirdparty/hedley/hedley.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/void_t.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/void_t.hpp:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/macro_scope.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/value_t.hpp:
 
 /usr/include/c++/11/bits/indirect_array.h:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/input/json_sax.hpp:
 
 /usr/include/c++/11/bits/mask_array.h:
 
@@ -480,15 +472,21 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/x86_64-linux-gnu/bits/iscanonical.h:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/string_concat.hpp:
-
 /usr/include/x86_64-linux-gnu/bits/mathcalls.h:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/cpp_future.hpp:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/detected.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h:
 
 /usr/include/x86_64-linux-gnu/bits/fp-logb.h:
 
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/json_ref.hpp:
+
 /usr/include/x86_64-linux-gnu/bits/flt-eval-method.h:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/input/binary_reader.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/math-vector.h:
 
@@ -512,13 +510,7 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/c++/11/forward_list:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/conversions/from_json.hpp:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/abi_macros.hpp:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/thirdparty/hedley/hedley_undef.hpp:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/adl_serializer.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/conversions/from_json.hpp:
 
 /usr/include/c++/11/backward/auto_ptr.h:
 
@@ -526,7 +518,11 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/c++/11/bits/atomic_lockfree_defines.h:
 
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/iterators/json_reverse_iterator.hpp:
+
 /usr/include/c++/11/bits/atomic_base.h:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/input/position_t.hpp:
 
 /usr/include/c++/11/ext/concurrence.h:
 
@@ -544,7 +540,7 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/c++/11/bits/stream_iterator.h:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/json.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/json.hpp:
 
 /usr/include/c++/11/bits/std_mutex.h:
 
@@ -576,8 +572,6 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/x86_64-linux-gnu/bits/siginfo-arch.h:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/iterators/primitive_iterator.hpp:
-
 /usr/include/x86_64-linux-gnu/bits/confname.h:
 
 /usr/include/x86_64-linux-gnu/bits/fp-fast.h:
@@ -593,8 +587,6 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 /usr/include/x86_64-linux-gnu/bits/signal_ext.h:
 
 /usr/include/x86_64-linux-gnu/bits/sigstksz.h:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/input/binary_reader.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/socket.h:
 
@@ -632,6 +624,8 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/x86_64-linux-gnu/bits/types/__fpos64_t.h:
 
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/iterators/iteration_proxy.hpp:
+
 /usr/include/x86_64-linux-gnu/bits/struct_rwlock.h:
 
 /usr/include/x86_64-linux-gnu/bits/sigthread.h:
@@ -654,11 +648,19 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/x86_64-linux-gnu/bits/floatn-common.h:
 
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/output/output_adapters.hpp:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/macro_scope.hpp:
+
 /usr/include/x86_64-linux-gnu/bits/types/wint_t.h:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/iterators/primitive_iterator.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/stack_t.h:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/exceptions.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/types/FILE.h:
 
@@ -674,17 +676,15 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/json_custom_base_class.hpp:
-
 /usr/include/c++/11/bits/stringfwd.h:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/input/position_t.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/types/error_t.h:
 
 /usr/include/x86_64-linux-gnu/sys/wait.h:
 
 /usr/include/asm-generic/errno-base.h:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/input/lexer.hpp:
 
 /usr/include/c++/11/bits/char_traits.h:
 
@@ -693,8 +693,6 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 /usr/include/x86_64-linux-gnu/bits/stdlib-float.h:
 
 /usr/include/x86_64-linux-gnu/asm/errno.h:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/exceptions.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_timeval.h:
 
@@ -736,7 +734,11 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/x86_64-linux-gnu/bits/posix_opt.h:
 
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/meta/identity_tag.hpp:
+
 /usr/include/x86_64-linux-gnu/gnu/stubs-64.h:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/macro_unscope.hpp:
 
 /usr/include/c++/11/bits/stl_algobase.h:
 
@@ -751,8 +753,6 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 /usr/include/c++/11/bits/basic_string.h:
 
 /usr/include/x86_64-linux-gnu/bits/stdint-intn.h:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/input/json_sax.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/types.h:
 
@@ -838,7 +838,7 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/c++/11/vector:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/iterators/iter_impl.hpp:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/conversions/to_json.hpp:
 
 /usr/include/x86_64-linux-gnu/sys/select.h:
 
@@ -847,8 +847,6 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 /usr/include/stdlib.h:
 
 /usr/include/linux/posix_types.h:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/input/lexer.hpp:
 
 /usr/include/c++/11/cstring:
 
@@ -862,9 +860,9 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/c++/11/bits/vector.tcc:
 
-/usr/include/asm-generic/sockios.h:
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/thirdparty/hedley/hedley.hpp:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/value_t.hpp:
+/usr/include/asm-generic/sockios.h:
 
 /usr/include/c++/11/bits/enable_special_members.h:
 
@@ -1010,8 +1008,6 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/c++/11/mutex:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/meta/detected.hpp:
-
 /usr/include/x86_64-linux-gnu/c++/11/bits/atomic_word.h:
 
 /usr/include/c++/11/type_traits:
@@ -1025,6 +1021,8 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 /usr/include/c++/11/bits/locale_classes.h:
 
 /usr/include/x86_64-linux-gnu/c++/11/bits/c++allocator.h:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/iterators/iterator_traits.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h:
 
@@ -1060,8 +1058,6 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/c++/11/bits/alloc_traits.h:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/iterators/json_reverse_iterator.hpp:
-
 /usr/include/c++/11/bits/shared_ptr.h:
 
 /usr/include/c++/11/bits/stl_construct.h:
@@ -1069,8 +1065,6 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 /usr/include/alloca.h:
 
 /usr/include/c++/11/cstdio:
-
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/input/parser.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/types/cookie_io_functions_t.h:
 
@@ -1087,6 +1081,8 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 /usr/include/c++/11/cstddef:
 
 /usr/include/c++/11/bits/stl_vector.h:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/adl_serializer.hpp:
 
 /usr/include/c++/11/utility:
 
@@ -1112,8 +1108,6 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/c++/11/bits/streambuf_iterator.h:
 
-/mnt/d/TOM/HUST\ STUFF/20222/Network\ Programming/Final\ Project/json-develop/include/nlohmann/detail/output/output_adapters.hpp:
-
 /usr/include/x86_64-linux-gnu/c++/11/bits/ctype_inline.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h:
@@ -1124,9 +1118,13 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 
 /usr/include/c++/11/bits/istream.tcc:
 
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/abi_macros.hpp:
+
 /usr/include/x86_64-linux-gnu/c++/11/bits/basic_file.h:
 
 /usr/include/x86_64-linux-gnu/c++/11/bits/c++io.h:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/json_custom_base_class.hpp:
 
 /usr/include/asm-generic/posix_types.h:
 
@@ -1143,6 +1141,8 @@ CMakeFiles/server.dir/server.cpp.o: ../server.cpp \
 /usr/include/c++/11/bits/stl_heap.h:
 
 /usr/include/c++/11/bits/stl_uninitialized.h:
+
+/mnt/c/Users/ACER/Documents/Network\ Programming/Course\ PRJ/TCP-Chess-master/json-develop/include/nlohmann/detail/iterators/iter_impl.hpp:
 
 /usr/include/x86_64-linux-gnu/gnu/stubs.h:
 

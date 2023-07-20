@@ -1,2 +1,61 @@
-﻿  ScreenManager.cpp
+﻿  LoginScreen.cpp
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\LoginScreen.cpp(69,66): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
+          with
+          [
+              T=int
+          ]
+          and
+          [
+              T=float
+          ]
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\LoginScreen.cpp(69,54): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
+          with
+          [
+              T=int
+          ]
+          and
+          [
+              T=float
+          ]
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\LoginScreen.cpp(74,71): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
+          with
+          [
+              T=int
+          ]
+          and
+          [
+              T=float
+          ]
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\LoginScreen.cpp(74,59): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
+          with
+          [
+              T=int
+          ]
+          and
+          [
+              T=float
+          ]
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\LoginScreen.cpp(88,67): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
+          with
+          [
+              T=int
+          ]
+          and
+          [
+              T=float
+          ]
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\LoginScreen.cpp(88,55): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
+          with
+          [
+              T=int
+          ]
+          and
+          [
+              T=float
+          ]
+  MainMenu.cpp
+  ScreenManager.cpp
+  TcpClient.cpp
+  main.cpp
+  Generating Code...
   Chess.vcxproj -> C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\x64\Debug\Chess.exe

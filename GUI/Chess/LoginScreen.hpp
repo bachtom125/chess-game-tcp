@@ -31,8 +31,9 @@ private:
 
     bool usernameActive = false;
     bool passwordActive = false;
+    bool isRequestSent = false;
 
     void handleTextInput(sf::Text& text, const sf::Event& event);
-    bool validateLogin(const std::string& username, const std::string& password);
+    void validateLogin();
     void displayErrorMessage(const std::string& message);
 };

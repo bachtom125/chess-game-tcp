@@ -2,7 +2,9 @@
 #include "nlohmann/json.hpp"
 #include <iostream>
 
+
 using json = nlohmann::json;
+
 
 TcpClient::TcpClient(const std::string& serverAddress, unsigned short serverPort)
     : serverAddress(serverAddress), serverPort(serverPort)
@@ -31,13 +33,17 @@ bool TcpClient::send(const std::string& message)
 
 bool TcpClient::receive(std::string& receivedData)
 {
-    char buffer[128];
+    char buffer[1024];
     std::size_t received;
     if (socket.receive(buffer, sizeof(buffer), received) == sf::Socket::Done) {
+
+
         receivedData = std::string(buffer, received);
+        std::cout << "receieved: " << received << std::endl;
+        std::cout << "receievedData: " << receivedData << std::endl;
         return true;
     }
-    else {
+    else {     
         return false;
     }
 }
