@@ -2,6 +2,11 @@
 
 #include <SFML/Graphics.hpp>
 #include "TcpClient.hpp"
+#include <thread>
+#include <atomic>
+
+using Fixed2DArray = int[8][8];
+
 
 class ChessBoardScreen
 {
@@ -31,10 +36,10 @@ private:
     int board[8][8] = { -1,-2,-3,-4,-5,-3,-2,-1,
                        -6,-6,-6,-6,-6,-6,-6,-6,
                         0, 0, 0, 0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 6, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 0,
-                        6, 6, 6, 6, 0, 6, 6, 6,
+                        0, 0, 0, 0, 0, 0, 0, 0,
+                        6, 6, 6, 6, 6, 6, 6, 6,
                         1, 2, 3, 4, 5, 3, 2, 1 };
     int size = 56;
     sf::Vector2f offset{ 28, 28 };
@@ -45,9 +50,24 @@ private:
     sf::Vector2f oldPos, newPos;
     std::string str;
     int n = 0;
+    bool firstMouseRelease = true;
 
     void handleTextInput(sf::Text& text, const sf::Event& event);
     // Function to handle matchmaking request and response
     bool sendMatchmakingRequest();
     void processMatchmakingResponse(const std::string& response);
+
+    // Add a flag to indicate if the server communication thread should continue running
+    std::atomic<bool> keepListening;
+
+    // Add a new thread for server communication
+    std::thread serverThread;
+
+    // New functions to handle receiving and processing game state response
+    void receiveGameStateResponse(const std::string& response);
+    void listenToServer();
+
+    // New function to send the move to the server and receive the game state response
+    void sendMoveToServer(const std::string& move);
+    Fixed2DArray& convertBoardResponse(std::string);
 };

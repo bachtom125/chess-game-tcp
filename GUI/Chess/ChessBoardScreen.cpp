@@ -27,7 +27,7 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
 
     // Handle events specific to the chess board screen
 
-    if (event.type == sf::Event::MouseButtonPressed)
+    if (event.type == sf::Event::MouseButtonPressed && !firstMouseRelease)
     {
         if (event.mouseButton.button == sf::Mouse::Left)
         {
@@ -48,17 +48,24 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
 
     if (event.type == sf::Event::MouseButtonReleased)
     {
-        if (event.mouseButton.button == sf::Mouse::Left)
+        if (event.mouseButton.button == sf::Mouse::Left && !firstMouseRelease)
         {
             isMove = false;
             sf::Vector2i pos = sf::Mouse::getPosition(window) - sf::Vector2i(offset);
             newPos = sf::Vector2f(size * int(pos.x / size), size * int(pos.y / size));
             str = toChessNote(oldPos) + toChessNote(newPos);
-            move(str);
+            std::string moveStr = toChessNote(oldPos) + " " + toChessNote(newPos);
+
             if (oldPos != newPos)
+            {
                 position += str + " ";
+                sendMoveToServer(moveStr);
+            }
             f[n].setPosition(newPos);
         }
+
+        firstMouseRelease = false;
+
     }
 }
 
@@ -128,13 +135,24 @@ void ChessBoardScreen::update()
 
 void ChessBoardScreen::draw()
 {
-    window.draw(sBoard);
+    /////animation///////
+    int n = 0;
     for (int i = 0; i < 32; i++)
-        f[i].move(offset);
-    for (int i = 0; i < 32; i++)
-        window.draw(f[i]);
-    for (int i = 0; i < 32; i++)
-        f[i].move(-offset);
+        if (f[i].getPosition() == oldPos)
+            n = i;
+    for (int k = 0; k < 50; k++)
+    {
+        sf::Vector2f p = newPos - oldPos;
+        f[n].move(p.x / 50, p.y / 50);
+        window.draw(sBoard);
+        for (int i = 0; i < 32; i++)
+            f[i].move(offset);
+        for (int i = 0; i < 32; i++)
+            window.draw(f[i]);
+        window.draw(f[n]);
+        for (int i = 0; i < 32; i++)
+            f[i].move(-offset);
+    }
 }
 
 void ChessBoardScreen::loadPosition()
@@ -255,4 +273,118 @@ void ChessBoardScreen::processMatchmakingResponse(const std::string& response)
     // Store the match details received from the server
     matchId = matchId;
     opponentUsername = opponentUsername;
+}
+
+void ChessBoardScreen::receiveGameStateResponse(const std::string& responseString)
+{
+    // Process the game state response from the server
+    // Update the game state, chess board, and other relevant data based on the received data
+
+    std::cout << responseString << std::endl;
+    
+    Fixed2DArray& newBoard = convertBoardResponse(responseString);
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            board[i][j] = newBoard[i][j];
+        }
+    }
+    loadPosition();
+}
+
+void ChessBoardScreen::sendMoveToServer(const std::string& move)
+{
+    // Prepare the move data (example)
+    json moveData = {
+        {"data",{"move", move},}
+    };
+
+    // Send the move data to the server
+    if (tcpClient.sendRequest(RequestType::Move, moveData))
+    {
+        std::cout << "Move sent to the server: " << move << std::endl;
+
+        // Receive the game state response from the server after sending the move
+        std::string receivedData;
+        if (tcpClient.receive(receivedData))
+        {
+            std::cout << "receivedData: " << receivedData << std::endl;
+            // Call the function to process the received game state response
+            receiveGameStateResponse(receivedData);
+        }
+    }
+    else
+    {
+        std::cerr << "Failed to send move to the server." << std::endl;
+    }
+}
+
+
+Fixed2DArray& ChessBoardScreen::convertBoardResponse(std::string s)
+{
+    int a[8][8];
+    int i, j, k = 0;
+    for (i = 0; i < 8; i++)
+    {
+        for (j = 0; j < 8; j++)
+        {
+            switch (s[k++])
+            {
+            case 'p':
+                a[i][j] = 6;
+                break;
+
+            case 'P':
+                a[i][j] = -6;
+                break;
+
+            case 'k':
+                a[i][j] = 5;
+                break;
+
+            case 'K':
+                a[i][j] = -5;
+                break;
+
+            case 'c':
+                a[i][j] = 2;
+                break;
+
+            case 'C':
+                a[i][j] = -2;
+                break;
+
+            case 'r':
+                a[i][j] = 1;
+                break;
+
+            case 'R':
+                a[i][j] = -1;
+                break;
+
+            case 'b':
+                a[i][j] = 3;
+                break;
+
+            case 'B':
+                a[i][j] = -3;
+                break;
+
+            case 'q':
+                a[i][j] = 4;
+                break;
+
+            case 'Q':
+                a[i][j] = -4;
+                break;
+
+            case '-':
+                a[i][j] = 0;
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    return a;
 }

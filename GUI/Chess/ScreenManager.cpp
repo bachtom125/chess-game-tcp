@@ -84,14 +84,16 @@ void ScreenManager::draw()
     if (currentScreen == Screen::Login)
     {
         loginScreen.draw();
+        window.display();
     }
     else if (currentScreen == Screen::MainMenu)
     {
         mainMenu.draw();
+        window.display();
     }
     else if (currentScreen == Screen::ChessBoardScreen) {
         chessBoardScreen.draw();
+        window.display();
     }
 
-    window.display();
 }

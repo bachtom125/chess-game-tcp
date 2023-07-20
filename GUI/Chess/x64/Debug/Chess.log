@@ -27,16 +27,17 @@ C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Ches
           [
               T=float
           ]
-C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(153,45): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(153,35): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(214,37): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(171,45): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(171,35): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(232,37): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
           with
           [
               T=float
           ]
-C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(214,27): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(232,27): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
           with
           [
               T=float
           ]
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(389): warning C4172: returning address of local variable or temporary: a
   Chess.vcxproj -> C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\x64\Debug\Chess.exe
