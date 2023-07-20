@@ -108,31 +108,6 @@ Player *find_online_player(int client_fd)
     return NULL;
 }
 
-vector<User> readAccountsFile()
-{
-    vector<User> users;
-    ifstream accountsFile("accounts.txt");
-    if (!accountsFile)
-    {
-        cerr << "Failed to open accounts file" << endl;
-        return users;
-    }
-
-    string line;
-    while (getline(accountsFile, line))
-    {
-        istringstream iss(line);
-        User user;
-        if (iss >> user.username >> user.password >> user.elo)
-        {
-            users.push_back(user);
-            cout << '.' << user.username << '.' << user.password << '.' << user.elo << '.' << endl;
-        }
-    }
-
-    return users;
-}
-
 User findUserByUsername(const string &username)
 {
     vector<User> users = readAccountsFile();
@@ -146,32 +121,6 @@ User findUserByUsername(const string &username)
 
     // Return a default-constructed User object if the user is not found
     return User();
-}
-
-bool isUserValid(const string &username, const string &password)
-{
-    ifstream accounts(ACCOUNTS_FILE);
-    if (!accounts)
-    {
-        cerr << "Failed to open accounts file" << endl;
-        return false;
-    }
-
-    string line;
-    while (getline(accounts, line))
-    {
-        string storedUsername, storedPassword;
-        istringstream iss(line);
-        if (iss >> storedUsername >> storedPassword)
-        {
-            if (storedUsername == username && storedPassword == password)
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
 }
 
 int find_player_fd(const string username)
@@ -292,54 +241,6 @@ void handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
     if (send_respond(RespondType::OnlinePlayersList, respond_type, client_fd) == 0)
     {
         cout << "Failed to send online players list to " << client_fd << endl;
-    }
-}
-
-void handleLoginRequest(const json &requestData, int client_fd)
-{
-    string username = requestData["username"];
-    string password = requestData["password"];
-
-    cout << username << endl;
-    cout << password << endl;
-
-    // Perform login validation/authentication logic
-    User user = findUserByUsername(username);
-    bool isCorrectInfo = (user.username == username && user.password == password);
-    int isOnline = find_player_fd(username);
-    bool isValid = isCorrectInfo && (isOnline == -1);
-
-    // Craft the response JSON
-    json response;
-    response["type"] = static_cast<int>(RequestType::Login);
-    response["success"] = isValid;
-
-    if (!isCorrectInfo)
-        response["message"] = "Invalid username or password";
-    else if (isOnline != -1)
-        response["message"] = "User already online";
-    else
-        response["message"] = "Login successful";
-
-    if (isValid)
-    {
-        Player *this_player = find_online_player(client_fd);
-        this_player->username = username;
-        this_player->logged_in = 1;
-        this_player->elo = user.elo;
-
-        cout << "Player " << username << " logged in with fd " << client_fd << endl;
-    }
-    else
-        cout << "Client " << client_fd << " failed to log in" << endl;
-
-    // Serialize the response JSON
-    string responseStr = response.dump();
-
-    // Send the response back to the client
-    if (send(client_fd, responseStr.c_str(), responseStr.size(), 0) == -1)
-    {
-        cerr << "Failed to send response to client" << endl;
     }
 }
 
@@ -1527,7 +1428,19 @@ void *play_game(void *arg)
 
     int ft = 0, current_fd;
     // Working ... need to constantly check surrender message from both players
+    json responseData = {
+        {"type", static_cast<int>(RequestType::Login)}, {"data", {{"user1", {{"username", (*a).username}, {"elo", (*a).elo}}}, {"user2", {{"username", (*b).username}, {"elo", (*b).elo}}}}}, {"success", true}};
 
+    std::string responseStr = responseData.dump();
+    if (send((*a).fd, responseStr.c_str(), responseStr.size(), 0) == -1)
+    {
+        std::cerr << "Failed to send response to client" << std::endl;
+    }
+
+    if (send((*b).fd, responseStr.c_str(), responseStr.size(), 0) == -1)
+    {
+        std::cerr << "Failed to send response to client" << std::endl;
+    }
     string moves_played = "";
     while (1)
     {

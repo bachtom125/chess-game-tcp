@@ -114,7 +114,7 @@ void ChessBoardScreen::update()
             {
                 // Parse the received data (you may need to adjust this based on your server response)
                 json response = json::parse(receivedData);
-                bool found = response["match_found"].get<bool>();
+                bool found = response["success"].get<bool>();
 
                 if (found)
                 {
