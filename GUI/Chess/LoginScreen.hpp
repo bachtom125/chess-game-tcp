@@ -2,13 +2,19 @@
 
 #include <SFML/Graphics.hpp>
 #include "TcpClient.hpp"
-
+struct User
+{
+    std::string username;
+    std::string password;
+    int elo;
+};
 class LoginScreen
 {
 
 public:
     LoginScreen(sf::RenderWindow& window,TcpClient& tcpClient);
     bool isLoginSuccessful = false;
+    User user;
 
     void handleEvent(const sf::Event& event);
     void update();

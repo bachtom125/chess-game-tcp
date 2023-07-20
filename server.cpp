@@ -22,8 +22,6 @@
 #define PORT 3000
 #define BUFF_SIZE 1024
 
-constexpr const char *ACCOUNTS_FILE = "accounts.txt";
-
 using namespace std;
 using json = nlohmann::json;
 
@@ -84,7 +82,7 @@ struct PlayGameThreadData
 void *client_operation(void *);
 void *play_game(void *);
 void *match_making_system(void *);
-
+std::vector<User> readAccountsFile();
 bool disconnect_player(int);
 
 constexpr const char *ACCOUNTS_FILE = "accounts.txt";
@@ -102,30 +100,6 @@ Player *find_online_player(int client_fd)
     return NULL;
 }
 
-vector<User> readAccountsFile()
-{
-    vector<User> users;
-    ifstream accountsFile("accounts.txt");
-    if (!accountsFile)
-    {
-        cerr << "Failed to open accounts file" << endl;
-        return users;
-    }
-
-    string line;
-    while (getline(accountsFile, line))
-    {
-        istringstream iss(line);
-        User user;
-        if (iss >> user.username >> user.password >> user.elo)
-        {
-            users.push_back(user);
-        }
-    }
-
-    return users;
-}
-
 User findUserByUsername(const string &username)
 {
     vector<User> users = readAccountsFile();
@@ -139,32 +113,6 @@ User findUserByUsername(const string &username)
 
     // Return a default-constructed User object if the user is not found
     return User();
-}
-
-bool isUserValid(const string &username, const string &password)
-{
-    ifstream accounts(ACCOUNTS_FILE);
-    if (!accounts)
-    {
-        cerr << "Failed to open accounts file" << endl;
-        return false;
-    }
-
-    string line;
-    while (getline(accounts, line))
-    {
-        string storedUsername, storedPassword;
-        istringstream iss(line);
-        if (iss >> storedUsername >> storedPassword)
-        {
-            if (storedUsername == username && storedPassword == password)
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
 }
 
 bool send_respond(RespondType type, const json &respond_data, int sd)
@@ -242,33 +190,6 @@ void handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
     if (send_respond(RespondType::OnlinePlayersList, respond_type, client_fd) == 0)
     {
         cout << "Failed to send online players list to " << client_fd << endl;
-    }
-}
-
-void handleLoginRequest(const json &requestData, int client_fd)
-{
-    string username = requestData["username"];
-    string password = requestData["password"];
-
-    cout << username << endl;
-    cout << password << endl;
-
-    // Perform login validation/authentication logic
-    User user = findUserByUsername(username);
-    bool isValid = (user.username == username && user.password == password);
-    // Craft the response JSON
-    json response;
-    response["type"] = static_cast<int>(RequestType::Login);
-    response["success"] = isValid;
-    response["message"] = isValid ? "Login successful" : "Invalid username or password";
-
-    // Serialize the response JSON
-    string responseStr = response.dump();
-
-    // Send the response back to the client
-    if (send(client_fd, responseStr.c_str(), responseStr.size(), 0) == -1)
-    {
-        cerr << "Failed to send response to client" << endl;
     }
 }
 
@@ -1481,13 +1402,6 @@ void *play_game(void *arg)
     pthread_exit(result);
 }
 
-struct User
-{
-    std::string username;
-    std::string password;
-    int elo;
-};
-
 std::vector<User> readAccountsFile()
 {
     std::vector<User> users;
@@ -1510,21 +1424,6 @@ std::vector<User> readAccountsFile()
     }
 
     return users;
-}
-
-User findUserByUsername(const std::string &username)
-{
-    std::vector<User> users = readAccountsFile();
-    for (const User &user : users)
-    {
-        if (user.username == username)
-        {
-            return user;
-        }
-    }
-
-    // Return a default-constructed User object if the user is not found
-    return User();
 }
 
 bool isUserValid(const std::string &username, const std::string &password)
@@ -1570,8 +1469,16 @@ void handleLoginRequest(const json &requestData, int clientSocket)
     response["success"] = isValid;
     response["message"] = isValid ? "Login successful" : "Invalid username or password";
 
+    if (isValid)
+    {
+        response["data"] = {{"username", user.username},
+                            {"password", user.password},
+                            {"elo", user.elo}};
+    }
+
     // Serialize the response JSON
     std::string responseStr = response.dump();
+    std::cout << "response: " << responseStr << std::endl;
 
     // Send the response back to the client
     if (send(clientSocket, responseStr.c_str(), responseStr.size(), 0) == -1)

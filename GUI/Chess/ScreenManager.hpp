@@ -14,6 +14,8 @@ enum class Screen
     ChessBoardScreen
 };
 
+
+
 class ScreenManager
 {
 public:
@@ -25,7 +27,7 @@ private:
     void handleEvents();
     void update();
     void draw();
-
+    User user;
     sf::RenderWindow& window;
     TcpClient& tcpClient;
     LoginScreen loginScreen;

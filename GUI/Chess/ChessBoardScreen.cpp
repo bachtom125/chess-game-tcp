@@ -1,8 +1,8 @@
 #include <iostream>
 #include "ChessBoardScreen.hpp"
 
-ChessBoardScreen::ChessBoardScreen(sf::RenderWindow& window)
-    : window(window)
+ChessBoardScreen::ChessBoardScreen(sf::RenderWindow& window, TcpClient& tcpClient)
+    : window(window), tcpClient(tcpClient)
 {
     t1.loadFromFile("./images/figures.png");
     t2.loadFromFile("./images/board.png");
@@ -21,6 +21,9 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
         std::cout << "close" << std::endl;
         window.close();
     }
+
+    if (!isMatchFound && !isMoveAllowed) return;
+
 
     // Handle events specific to the chess board screen
 
@@ -98,6 +101,29 @@ void ChessBoardScreen::update()
     //    position += str + " ";
     //    f[n].setPosition(newPos);
     //}
+
+    if (!isMatchFound)
+    {
+        // Send a request to the server to check for match found
+        // For example, assuming the request type is RequestType::CheckMatchFound
+        json requestData; // Populate the JSON data for the request if needed
+        if (tcpClient.sendRequest(RequestType::MatchMaking, requestData))
+        {
+            std::string receivedData;
+            if (tcpClient.receive(receivedData))
+            {
+                // Parse the received data (you may need to adjust this based on your server response)
+                json response = json::parse(receivedData);
+                bool found = response["match_found"].get<bool>();
+
+                if (found)
+                {
+                    isMatchFound = true;
+                    std::cout << "Match Found!" << std::endl;
+                }
+            }
+        }
+    }
 }
 
 void ChessBoardScreen::draw()
@@ -184,6 +210,49 @@ std::string ChessBoardScreen::toChessNote(sf::Vector2f p)
 sf::Vector2f ChessBoardScreen::toCoord(char a, char b)
 {
     int x = static_cast<int>(a) - 97;
-    int y = 7 - static_cast<int>(b) + 49;
+    int y = 7 - static_cast<int>(b) + 49;   
     return sf::Vector2f(x * size, y * size);
+}
+
+bool ChessBoardScreen::sendMatchmakingRequest()
+{
+    // Prepare the matchmaking request data (example)
+    json matchmakingRequestData = {
+        {"username", "player123"} // Replace "player123" with the actual username of the player
+        // Add any other relevant data for matchmaking
+    };
+
+    // Send the matchmaking request to the server
+    if (tcpClient.sendRequest(RequestType::MatchMaking, matchmakingRequestData))
+    {
+        std::cout << "Matchmaking request sent successfully!" << std::endl;
+        return true;
+    }
+    else
+    {
+        std::cerr << "Failed to send matchmaking request to the server." << std::endl;
+        return false;
+    }
+}
+
+void ChessBoardScreen::processMatchmakingResponse(const std::string& response)
+{
+    // Process the matchmaking response from the server
+    json jsonResponse = json::parse(response);
+    // Assuming the server responds with JSON data as follows:
+    // {
+    //     "matchId": "123456",
+    //     "opponentUsername": "opponent123"
+    // }
+    std::string matchId = jsonResponse["matchId"];
+    std::string opponentUsername = jsonResponse["opponentUsername"];
+    std::cout << "Match found! Match ID: " << matchId << ", Opponent: " << opponentUsername << std::endl;
+
+    // Now you have the match information, and you can proceed with your game logic and rendering.
+    // Set the appropriate flags or update the game state to indicate that a match is found.
+    isMatchFound = true;
+    isMoveAllowed = true;
+    // Store the match details received from the server
+    matchId = matchId;
+    opponentUsername = opponentUsername;
 }

@@ -13,10 +13,16 @@ TcpClient::TcpClient(const std::string& serverAddress, unsigned short serverPort
 
 bool TcpClient::connect()
 {
+    std::cout << "Connect: " << std::endl;
+
     if (socket.connect(serverAddress, serverPort) == sf::Socket::Done) {
+        std::cout << "Connect successfull: " << std::endl;
+
         return true;
     }
     else {
+        std::cout << "Connect fail: " << std::endl;
+
         return false;
     }
 }

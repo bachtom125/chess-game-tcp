@@ -9,8 +9,21 @@ using json = nlohmann::json;
 enum class RequestType
 {
     Login,
+    Logout,
+    MatchMaking,
+    Challenge,
+    Move,
+    GetOnlinePlayersList,
     SomeOtherRequest,
     // Add more request types as needed
+};
+
+enum class RespondType
+{
+    LogoutSuccess,
+    MoveVerdict,       // Working ... needs implementing
+    GameResult,        // Working ... needs implementing
+    OnlinePlayersList, // Working ... needs implementing
 };
 
 class TcpClient

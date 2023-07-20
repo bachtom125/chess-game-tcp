@@ -1,14 +1,15 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
-
+#include "LoginScreen.hpp"
 enum class Screen;
 
 enum MainMenuOption
 {
-    Option_Challenger,
-    Option_RandomMatch,
-    Option_OnlineUsers
+    Option_MainMenu,
+    Option_Matchmaking,
+    Option_Challenge,
+    Option_Exit
 };
 
 class MainMenu
@@ -20,17 +21,20 @@ public:
     void update();
     void draw();
     Screen activeScreen;
+    User user; // Store the user pointer to access user information
 
 
 private:
     sf::RenderWindow& window;
-    MainMenuOption currentOption;
+    MainMenuOption currentOption = MainMenuOption::Option_MainMenu;
+    // Add a new sf::Text object to display user information
+    sf::Text userInfoText;
 
     sf::Font font;
     sf::Text titleText;
-    sf::Text challengerText;
-    sf::Text randomMatchText;
-    sf::Text onlineUsersText;
+    sf::Text matchmakingText;
+    sf::Text challengeText;
+    sf::Text exitText;
 
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;

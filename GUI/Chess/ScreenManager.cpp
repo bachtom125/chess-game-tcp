@@ -6,9 +6,10 @@ ScreenManager::ScreenManager(sf::RenderWindow& window, TcpClient& tcpClient)
     tcpClient(tcpClient),
     loginScreen(window, tcpClient),
     mainMenu(window),
-    chessBoardScreen(window),
+    chessBoardScreen(window, tcpClient),
     currentScreen(Screen::Login)
 {
+    
 }
 
 void ScreenManager::run()
@@ -36,6 +37,7 @@ void ScreenManager::handleEvents()
             loginScreen.handleEvent(event);
             if (loginScreen.isLoginSuccessful)
             {
+                mainMenu.user = loginScreen.user;
                 currentScreen = Screen::MainMenu;
                 std::cout << "Login success" << std::endl;
             }
@@ -58,7 +60,10 @@ void ScreenManager::update()
         loginScreen.update();
         if (loginScreen.isLoginSuccessful)
         {
+            mainMenu.user = loginScreen.user;
+            
             currentScreen = Screen::MainMenu;
+            user = loginScreen.user;
         }
     }
     else if (currentScreen == Screen::MainMenu)

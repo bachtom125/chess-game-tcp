@@ -1,17 +1,25 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include "TcpClient.hpp"
 
 class ChessBoardScreen
 {
 public:
-    ChessBoardScreen(sf::RenderWindow& window);
+    ChessBoardScreen(sf::RenderWindow& window, TcpClient& tcpClient);
 
     void handleEvent(const sf::Event& event);
     void update();
     void draw();
 
 private:
+    bool isMatchFound = false;
+    bool isMoveAllowed = false;
+    std::string matchId;
+    std::string opponentUsername;
+
+    TcpClient& tcpClient; // TcpClient member variable
+
     void loadPosition();
     void move(std::string str);
     std::string toChessNote(sf::Vector2f p);
@@ -39,4 +47,7 @@ private:
     int n = 0;
 
     void handleTextInput(sf::Text& text, const sf::Event& event);
+    // Function to handle matchmaking request and response
+    bool sendMatchmakingRequest();
+    void processMatchmakingResponse(const std::string& response);
 };

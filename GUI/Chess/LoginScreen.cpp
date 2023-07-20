@@ -141,7 +141,18 @@ void LoginScreen::validateLogin()
 	std::cout << "serverResponse: " << json_data.dump() << std::endl;
 
 	if (json_data["type"] != RequestType::Login) return;
-	if (json_data["success"]) isLoginSuccessful = true;
+	if (json_data["success"]) 
+	{
+		User newUser;
+		std::cout << "user: " << json_data["data"].dump() << std::endl;
+		newUser.username = json_data["data"]["username"];
+		newUser.password = json_data["data"]["password"];
+		newUser.elo = json_data["data"]["elo"];
+		std::cout << "user.username: " << newUser.username << std::endl;
+		user = newUser;
+		isLoginSuccessful = true;
+
+	}
 	else{
 		isLoginSuccessful = false;
 		displayErrorMessage("Wrong username or password");
