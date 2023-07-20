@@ -17,6 +17,7 @@
 #include <limits>
 #include <nlohmann/json.hpp>
 #include <fstream> // Add this line
+#include <vector>
 #include <condition_variable>
 
 /* int board[8][8] =
@@ -39,13 +40,91 @@ using json = nlohmann::json;
 
 extern int errno;
 
+struct Player
+{
+    // Working ....
+    // Need to all User field to everywhere containing Player, and then proceed with handleChanllengeRequest()
+    // struct User *user;
+    int round;
+    int fd;
+    int free;
+};
+
 enum class RequestType
 {
     Login,
+    Logout,
+    MatchMaking,
+    Challenge,
     Move,
+    GetOnlinePlayersList,
     SomeOtherRequest,
     // Add more request types as needed
 };
+
+enum class RespondType
+{
+    MoveVerdict,       // Working ... needs implementing
+    GameResult,        // Working ... needs implementing
+    OnlinePlayersList, // Working ... needs implementing
+};
+
+string reverse_convert(int a[8][8])
+{
+    string s = "";
+
+    for (int i = 0; i <= 7; i++)
+    {
+        for (int j = 0; j <= 7; j++)
+        {
+            switch (a[i][j])
+            {
+            case 6:
+                s.push_back('p');
+                break;
+            case -6:
+                s.push_back('P');
+                break;
+            case 5:
+                s.push_back('k');
+                break;
+            case -5:
+                s.push_back('K');
+                break;
+            case 2:
+                s.push_back('c');
+                break;
+            case -2:
+                s.push_back('C');
+                break;
+            case 1:
+                s.push_back('r');
+                break;
+            case -1:
+                s.push_back('R');
+                break;
+            case 3:
+                s.push_back('b');
+                break;
+            case -3:
+                s.push_back('B');
+                break;
+            case 4:
+                s.push_back('q');
+                break;
+            case -4:
+                s.push_back('Q');
+                break;
+            case 0:
+                s.push_back('-');
+                break;
+            default:
+                break;
+            }
+        }
+    }
+    return s;
+}
 
 bool send_request(RequestType type, const json &request_data, int sd)
 {
@@ -65,6 +144,36 @@ bool send_request(RequestType type, const json &request_data, int sd)
         return 0;
     }
     return 1;
+}
+
+json receive_respond(int sd) // get respond and return corresponding json object
+{
+    array<char, 1024> buffer{};
+    ssize_t bytesRead = recv(sd, buffer.data(), buffer.size(), 0);
+    if (bytesRead <= 0)
+    {
+        cerr << "Error receiving data" << endl;
+        close(sd);
+        return NULL;
+    }
+
+    string respond_data(buffer.data(), bytesRead);
+    cout << respond_data << endl;
+
+    size_t bracePos = respond_data.find_first_of('{');
+    if (bracePos != string::npos)
+    {
+        // Extract the substring from the brace position until the end of the string
+        string jsonSubstring = respond_data.substr(bracePos);
+
+        // Parse the extracted JSON substring
+        json json_data = json::parse(jsonSubstring);
+
+        // Determine the type of request and dispatch to the appropriate handler
+        return json_data;
+    }
+
+    return NULL;
 }
 
 // need to add client receiving results sent by server after the game's over
@@ -134,14 +243,6 @@ void convert(int a[9][9], string s)
             }
         }
     }
-    // for (i = 1; i <= 8; i++)
-    // {
-    //     for (j = 1; j <= 8; j++)
-    //     {
-    //         cout << a[i][j] << ' ';
-    //     }
-    //     cout << endl;
-    // }
 }
 
 void print_board(int A[9][9])
@@ -226,12 +327,6 @@ void *send_game_data(void *arg)
         {
             cout << "Failed to send move" << endl;
         }
-        // if (write(sd, msg, 100) <= 0)
-        // {
-        //     perror("[client]Error in write() to server.\n");
-        //     break;
-        // }
-        // cout << "JUST WROTE" << msg << endl;
     }
 
     int *result = new int(42);
@@ -332,19 +427,31 @@ int main(int argc, char *argv[])
     while (1)
     {
         fflush(stdin);
-
         option = menu();
-        cout << "sdsd" << option << "asdasd" << endl;
-        if (send(sd, &option, sizeof(option), 0) == -1)
-        {
-            cerr << "Error occurred while sending the option to the server." << endl;
-            close(sd);
-            return 1;
-        }
+
+        json move_request, get_online_players_request, received_data, challenge_request;
+        int board[8][8] =
+            {-1, -2, -3, -4, -5, -3, -2, -1,
+             -6, -6, -6, -6, -6, -6, -6, -6,
+             0, 0, 0, 0, 0, 0, 0, 0,
+             0, 0, 0, 0, 0, 0, 0, 0,
+             0, 0, 0, 0, 0, 0, 0, 0,
+             0, 0, 0, 0, 0, 0, 0, 0,
+             6, 6, 6, 6, 6, 6, 6, 6,
+             1, 2, 3, 4, 5, 3, 2, 1};
+
+        string s;
+        int chosen_player;
 
         switch (option)
         {
         case 1:
+            move_request["sd"] = sd;
+            if (send_request(RequestType::MatchMaking, move_request, sd) == 0)
+            {
+                cout << "Failed to send matchmaking request" << endl;
+                return 1;
+            }
 
             in_game = 1;
             pthread_t receive_tid;
@@ -358,23 +465,68 @@ int main(int argc, char *argv[])
                 if (!in_game)
                     break;
             }
-            // pthread_kill(receive_tid, SIGUSR1);
-            // pthread_kill(send_tid, SIGUSR1);
             pthread_cancel(send_tid);
+
             // Wait for the thread to finish
             pthread_join(receive_tid, nullptr);
             pthread_join(send_tid, nullptr);
-
-            break;
-
             break;
         case 2:
-            cout << "Challenging another player..." << endl;
-            // Add  challenge logic here
+            // first get the online players list
+            if (send_request(RequestType::GetOnlinePlayersList, get_online_players_request, sd) == 0)
+            {
+                cout << "Failed to send request" << endl;
+                return 1;
+            }
+            received_data = receive_respond(sd); // get player list
+            if (!received_data.empty())
+            {
+                if (received_data["type"] == RespondType::OnlinePlayersList)
+                {
+                    json online_players = received_data["data"];
+                    cout << "Online Players: ";
+                    for (json player : online_players)
+                    {
+                        cout << player["fd"] << ' ';
+                    }
+                    cout << endl;
+                }
+                else
+                {
+                    cout << "Wrong respond types" << endl;
+                }
+            }
+
+            // now choose 1 player
+            chosen_player = received_data["data"][0]["fd"];
+            // now send match request and picked user
+            challenge_request["opponent"] = chosen_player;
+            challenge_request["board"] = board;
+
+            if (send_request(RequestType::Challenge, get_online_players_request, sd) == 0)
+            {
+                cout << "Failed to send request" << endl;
+                return 1;
+            }
             break;
+        // s = reverse_convert(board);
+        // // need to choose a player first
+        // move_request["board"] = s;
+        // if (send_request(RequestType::Challenge, move_request, sd) == 0)
+        // {
+        //     cout << "Failed to send move" << endl;
+        //     return 1;
+        // }
+        // cout << "Challenging another player..." << endl;
+        // break;
         case 3:
-            cout << "Exiting..." << endl;
+            if (send_request(RequestType::Logout, nullptr, sd) == 0)
+            {
+                cout << "Failed to send request" << endl;
+                return 0;
+            }
             return 0;
+            // Working ... maybe needs log out success respond from server
         default:
             cout << "Invalid choice. Please try again." << endl;
         }
