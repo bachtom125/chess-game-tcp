@@ -41,10 +41,12 @@ enum class RequestType
 
 enum class RespondType
 {
-    LogoutSuccess,
-    MoveVerdict,       // Working ... needs implementing
-    GameResult,        // Working ... needs implementing
-    OnlinePlayersList, // Working ... needs implementing
+    Login,
+    Logout,
+    Move, // Working ... needs implementing
+    Challenge,
+    GameResult, // Working ... needs implementing
+    OnlinePlayersList,
 };
 
 struct User
@@ -58,10 +60,12 @@ struct Player
 {
     // Working ....
     // Need to all User field to everywhere containing Player, and then proceed with handleChanllengeRequest()
-    // struct User *user;
+    string username = "";
+    int elo = -1;
     int round;
     int fd;
     int free;
+    int logged_in = 0;
 };
 
 fd_set readfds;
@@ -73,10 +77,14 @@ queue<Player *> match_making_players;
 
 mutex queue_mutex, vector_mutex;
 condition_variable queue_condition;
+
 struct PlayGameThreadData
 {
     Player *player_a;
     Player *player_b;
+    string initial_board = "";
+
+    // char initial_board[9][9];
 };
 
 void *client_operation(void *);
@@ -100,6 +108,31 @@ Player *find_online_player(int client_fd)
     return NULL;
 }
 
+vector<User> readAccountsFile()
+{
+    vector<User> users;
+    ifstream accountsFile("accounts.txt");
+    if (!accountsFile)
+    {
+        cerr << "Failed to open accounts file" << endl;
+        return users;
+    }
+
+    string line;
+    while (getline(accountsFile, line))
+    {
+        istringstream iss(line);
+        User user;
+        if (iss >> user.username >> user.password >> user.elo)
+        {
+            users.push_back(user);
+            cout << '.' << user.username << '.' << user.password << '.' << user.elo << '.' << endl;
+        }
+    }
+
+    return users;
+}
+
 User findUserByUsername(const string &username)
 {
     vector<User> users = readAccountsFile();
@@ -115,6 +148,61 @@ User findUserByUsername(const string &username)
     return User();
 }
 
+bool isUserValid(const string &username, const string &password)
+{
+    ifstream accounts(ACCOUNTS_FILE);
+    if (!accounts)
+    {
+        cerr << "Failed to open accounts file" << endl;
+        return false;
+    }
+
+    string line;
+    while (getline(accounts, line))
+    {
+        string storedUsername, storedPassword;
+        istringstream iss(line);
+        if (iss >> storedUsername >> storedPassword)
+        {
+            if (storedUsername == username && storedPassword == password)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+int find_player_fd(const string username)
+{
+    for (Player *player : online_players)
+    {
+        if (player->username == username)
+            return player->fd;
+    }
+    return -1;
+}
+
+bool send_request(RequestType type, const json &request_data, int sd)
+{
+    // Create the request JSON
+    cout << "Request Sent: " << request_data << endl;
+    json request;
+    request["type"] = static_cast<int>(type);
+    request["data"] = request_data;
+
+    // Serialize the request JSON
+    string serializedRequest = request.dump();
+    cout << "about to send this bro" << serializedRequest << endl;
+    if (send(sd, serializedRequest.c_str(), serializedRequest.size(), 0) == -1)
+    {
+        cerr << "Error occurred while sending the request to the client." << endl;
+        close(sd);
+        return 0;
+    }
+    return 1;
+}
 bool send_respond(RespondType type, const json &respond_data, int sd)
 {
     // Create the respond JSON
@@ -138,7 +226,6 @@ bool send_respond(RespondType type, const json &respond_data, int sd)
 void handleMatchMakingRequest(const json &requestData, int client_fd)
 {
     // need to check if logged in
-
     Player *this_player = find_online_player(client_fd);
     cout << "and he is " << client_fd << ':' << this_player << endl;
     if (!this_player)
@@ -162,7 +249,22 @@ void handleMatchMakingRequest(const json &requestData, int client_fd)
 void handleChallengeRequest(const json &requestData, int client_fd)
 {
     // get the board
+    string board = requestData["board"];
+    string opponent_username = requestData["opponent"];
+    string challenger_username = requestData["challenger"];
+
     // send notification to the other player
+    cout << challenger_username << " challenged " << opponent_username << " with this board " << board << endl;
+
+    int opponent_fd = find_player_fd(opponent_username);
+    json respond_type;
+    respond_type["challenger"] = challenger_username;
+    respond_type["board"] = board;
+
+    if (send_request(RequestType::Challenge, respond_type, opponent_fd) == 0)
+    {
+        cout << "Failed to send out challenge to " << opponent_fd << endl;
+    }
     // make a game with the recieved board
 }
 
@@ -173,7 +275,6 @@ bool handleLogoutRequest(const json &requestData, int client_fd)
 
 void handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
 {
-
     json respond_type;
 
     for (const auto *player : online_players)
@@ -181,7 +282,8 @@ void handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
         if (player->fd == client_fd)
             continue;
         json playerJson;
-        playerJson["fd"] = player->fd;
+        playerJson["username"] = player->username;
+        playerJson["elo"] = player->elo;
         playerJson["free"] = player->free;
         respond_type.push_back(playerJson);
     }
@@ -193,6 +295,54 @@ void handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
     }
 }
 
+void handleLoginRequest(const json &requestData, int client_fd)
+{
+    string username = requestData["username"];
+    string password = requestData["password"];
+
+    cout << username << endl;
+    cout << password << endl;
+
+    // Perform login validation/authentication logic
+    User user = findUserByUsername(username);
+    bool isCorrectInfo = (user.username == username && user.password == password);
+    int isOnline = find_player_fd(username);
+    bool isValid = isCorrectInfo && (isOnline == -1);
+
+    // Craft the response JSON
+    json response;
+    response["type"] = static_cast<int>(RequestType::Login);
+    response["success"] = isValid;
+
+    if (!isCorrectInfo)
+        response["message"] = "Invalid username or password";
+    else if (isOnline != -1)
+        response["message"] = "User already online";
+    else
+        response["message"] = "Login successful";
+
+    if (isValid)
+    {
+        Player *this_player = find_online_player(client_fd);
+        this_player->username = username;
+        this_player->logged_in = 1;
+        this_player->elo = user.elo;
+
+        cout << "Player " << username << " logged in with fd " << client_fd << endl;
+    }
+    else
+        cout << "Client " << client_fd << " failed to log in" << endl;
+
+    // Serialize the response JSON
+    string responseStr = response.dump();
+
+    // Send the response back to the client
+    if (send(client_fd, responseStr.c_str(), responseStr.size(), 0) == -1)
+    {
+        cerr << "Failed to send response to client" << endl;
+    }
+}
+
 void remove_player_from_matchmaking()
 {
     // Working
@@ -200,7 +350,6 @@ void remove_player_from_matchmaking()
 
 bool disconnect_player(int fd)
 {
-    cout << "HERE" << endl;
     auto it = online_players.begin();
     while (it != online_players.end())
     {
@@ -806,23 +955,40 @@ int check_mate(char A[9][9], char type)
     return 0;
 }
 
-void send_result(int loser_fd, int winner_fd)
+void send_result(int loser_fd, int winner_fd, string moves_played)
 {
     char msg[BUFF_SIZE];
     strcpy(msg, "winner");
-    if (write(winner_fd, msg, strlen(msg)) < 0)
+    cout << "ALL MOVES " << moves_played << endl;
+    // send result
+    if (write(winner_fd, msg, BUFF_SIZE) < 0)
     {
         cerr << "Error occurred while sending message to the Winner." << endl;
     }
+
+    // send moves played
+    if (write(winner_fd, moves_played.c_str(), moves_played.size()) < 0)
+    {
+        cerr << "Error occurred while sending moves to the Winner." << endl;
+    }
+
+    // send match result
     strcpy(msg, "loser");
-    if (write(loser_fd, msg, strlen(msg)) < 0)
+    if (write(loser_fd, msg, BUFF_SIZE) < 0)
     {
         cerr << "Error occurred while sending message to the Loser" << endl;
     }
+
+    // send moves played
+    if (write(loser_fd, moves_played.c_str(), moves_played.size()) < 0)
+    {
+        cerr << "Error occurred while sending moves to the Loser." << endl;
+    }
+
     cout << "The winner is " << winner_fd << endl;
 }
 
-int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, int &verify, char move)
+int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, int &verify, char move, string &moves_played)
 {
     string s;
     char buffer[BUFF_SIZE];
@@ -904,24 +1070,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
 
     // cout << type << " " << sr << " " << sc << " " << dr << " " << dc << " " << transform << endl;
 
-    if (strcmp(msg, "surrender\n") == 0)
-    {
-        send_result(fd, opponent_fd);
-        return -1;
-    }
-    else if (move == 'a' && check_mate(A, 'K'))
-    {
-
-        send_result(fd, opponent_fd);
-        return -1;
-    }
-    else if (move == 'b' && check_mate(A, 'k'))
-    {
-
-        send_result(opponent_fd, fd);
-        return -1;
-    }
-    else if (move == 'a' && is_black_piece(type))
+    if (move == 'a' && is_black_piece(type))
     {
         strcpy(msg, "Invalid move");
         write(fd, msg, strlen(msg));
@@ -939,196 +1088,221 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
         write(fd, msg, strlen(msg));
         return -2;
     }
-    else if (transform == 'F')
-    { // ROCADA
-        int ok = 0;
-        if (sr == 1 && dr == 1)
+
+    else
+    {
+        string move_played(msg);
+        moves_played += to_string(fd) + ":" + move_played;
+        // cout << "current moves played: " << moves_played << endl;
+        if (strcmp(msg, "surrender\n") == 0)
         {
-            char t1, t2;
-            t1 = A[sr][sc], t2 = A[dr][dc];
-            if (sc == 1 && dc == 5)
-            {
-                if (is_white_piece(t1) && is_white_piece(t2))
-                {
-                    if (!is_checked(A, t1, dr, dc - 1) && !is_checked(A, t2, dr, dc - 2))
-                    {
-                        if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-' && A[sr][sc + 3] == '-')
-                            if (!vizA[1] && !vizA[2])
-                            {
-                                A[sr][sc] = '-';
-                                A[dr][dc] = '-';
-                                A[sr][sc + 2] = t2;
-                                A[sr][dc - 1] = t1;
-                                vizA[1] = 1;
-                                vizA[2] = 1;
-                                ok = 1;
-                            }
-                    }
-                }
-            }
-            else if (sc == 5 && dc == 8)
-            {
-                if (is_white_piece(t1) && is_white_piece(t2))
-                {
-                    if (!is_checked(A, t1, dr, sc + 1) && !is_checked(A, t2, dr, sc + 2))
-                    {
-                        if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-')
-                            if (!vizA[2] && !vizA[3])
-                            {
-                                A[sr][sc] = '-';
-                                A[dr][dc] = '-';
-                                A[sr][sc + 1] = t2;
-                                A[sr][dc - 1] = t1;
-                                vizA[2] = 1;
-                                vizA[3] = 1;
-                                ok = 1;
-                            }
-                    }
-                }
-            }
+            send_result(fd, opponent_fd, moves_played);
+            return -1;
         }
-        else if (sr == 8 && dr == 8)
+        else if (move == 'a' && check_mate(A, 'K'))
         {
-            char t1, t2;
-            t1 = A[sr][sc], t2 = A[dr][dc];
-            if (sc == 1 && dc == 5)
-            {
-                if (is_black_piece(t1) && is_black_piece(t2))
-                {
-                    if (!is_checked(A, t1, dr, dc - 1) && !is_checked(A, t2, dr, dc - 2))
-                    {
-                        if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-' && A[sr][sc + 3] == '-')
-                            if (!vizB[1] && !vizB[2])
-                            {
-                                A[sr][sc] = '-';
-                                A[dr][dc] = '-';
-                                A[sr][sc + 2] = t2;
-                                A[sr][dc - 1] = t1;
-                                vizB[1] = 1;
-                                vizB[2] = 1;
-                                ok = 1;
-                            }
-                    }
-                }
-            }
-            else if (sc == 5 && dc == 8)
-            {
-                if (is_black_piece(t1) && is_black_piece(t2))
-                {
-                    if (!is_checked(A, t1, dr, sc + 1) && !is_checked(A, t2, dr, sc + 2))
-                    {
-                        if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-')
-                            if (!vizB[2] && !vizB[3])
-                            {
-                                A[sr][sc] = '-';
-                                A[dr][dc] = '-';
-                                A[sr][sc + 1] = t2;
-                                A[sr][dc - 1] = t1;
-                                vizB[2] = 1;
-                                vizB[3] = 1;
-                                ok = 1;
-                            }
-                    }
-                }
-            }
+
+            send_result(fd, opponent_fd, moves_played);
+            return -1;
+        }
+        else if (move == 'b' && check_mate(A, 'k'))
+        {
+
+            send_result(opponent_fd, fd, moves_played);
+            return -1;
         }
 
-        if (!ok)
-        {
-            strcpy(msg, "Castling is not possible!");
-            write(fd, msg, strlen(msg));
-            return -2;
-        }
-        else if (ok)
-        {
-            // PrintTable(A);
-            s = convert(A);
-            write(fd, s.c_str(), s.size());
-            cout << "Castling performed!" << endl;
-            verify = 1;
-            return s.size();
-        }
-    }
-    else if (!is_valid_move(A, type, sr, sc, dr, dc))
-    {
-        strcpy(msg, "Invalid move");
-        write(fd, msg, strlen(msg));
-        return -2;
-    }
-    else if (is_valid_move(A, type, sr, sc, dr, dc))
-    {
-        A[sr][sc] = '-';
-        A[dr][dc] = type;
-        if (move == 'a' && check(A, 'K'))
-        {
-            strcpy(msg, "Invalid move! check!");
-            write(fd, msg, strlen(msg));
-            A[sr][sc] = type;
-            A[dr][dc] = save;
-            return -2;
-        }
-        else if (move == 'b' && check(A, 'k'))
-        {
-            strcpy(msg, "Invalid move! check!");
-            write(fd, msg, strlen(msg));
-            A[sr][sc] = type;
-            A[dr][dc] = save;
-            return -2;
-        }
-
-        // Transformation invalid for pawn when reaching the enemy's last row.
-        if (type == 'p' && dr == 1 && is_black_piece(transform) && (transform == 'b' || transform == 'c' || transform == 'q' || transform == 'r'))
-            A[sr][sc] = '-', A[dr][dc] = transform;
-        else if (type == 'P' && dr == 8 && is_white_piece(transform) && (transform == 'B' || transform == 'C' || transform == 'Q' || transform == 'R'))
-            A[sr][sc] = '-', A[dr][dc] = transform;
-        else if ((transform != 'b' || transform != 'c' || transform != 'q' || transform != 'r' || transform != 'B' || transform != 'C' || transform != 'Q' || transform != 'R') && (type == 'p' || type == 'P'))
-        {
-            if (dr == 1 || dr == 8)
+        else if (transform == 'F')
+        { // ROCADA
+            int ok = 0;
+            if (sr == 1 && dr == 1)
             {
-                strcpy(msg, "Invalid transformation!");
+                char t1, t2;
+                t1 = A[sr][sc], t2 = A[dr][dc];
+                if (sc == 1 && dc == 5)
+                {
+                    if (is_white_piece(t1) && is_white_piece(t2))
+                    {
+                        if (!is_checked(A, t1, dr, dc - 1) && !is_checked(A, t2, dr, dc - 2))
+                        {
+                            if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-' && A[sr][sc + 3] == '-')
+                                if (!vizA[1] && !vizA[2])
+                                {
+                                    A[sr][sc] = '-';
+                                    A[dr][dc] = '-';
+                                    A[sr][sc + 2] = t2;
+                                    A[sr][dc - 1] = t1;
+                                    vizA[1] = 1;
+                                    vizA[2] = 1;
+                                    ok = 1;
+                                }
+                        }
+                    }
+                }
+                else if (sc == 5 && dc == 8)
+                {
+                    if (is_white_piece(t1) && is_white_piece(t2))
+                    {
+                        if (!is_checked(A, t1, dr, sc + 1) && !is_checked(A, t2, dr, sc + 2))
+                        {
+                            if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-')
+                                if (!vizA[2] && !vizA[3])
+                                {
+                                    A[sr][sc] = '-';
+                                    A[dr][dc] = '-';
+                                    A[sr][sc + 1] = t2;
+                                    A[sr][dc - 1] = t1;
+                                    vizA[2] = 1;
+                                    vizA[3] = 1;
+                                    ok = 1;
+                                }
+                        }
+                    }
+                }
+            }
+            else if (sr == 8 && dr == 8)
+            {
+                char t1, t2;
+                t1 = A[sr][sc], t2 = A[dr][dc];
+                if (sc == 1 && dc == 5)
+                {
+                    if (is_black_piece(t1) && is_black_piece(t2))
+                    {
+                        if (!is_checked(A, t1, dr, dc - 1) && !is_checked(A, t2, dr, dc - 2))
+                        {
+                            if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-' && A[sr][sc + 3] == '-')
+                                if (!vizB[1] && !vizB[2])
+                                {
+                                    A[sr][sc] = '-';
+                                    A[dr][dc] = '-';
+                                    A[sr][sc + 2] = t2;
+                                    A[sr][dc - 1] = t1;
+                                    vizB[1] = 1;
+                                    vizB[2] = 1;
+                                    ok = 1;
+                                }
+                        }
+                    }
+                }
+                else if (sc == 5 && dc == 8)
+                {
+                    if (is_black_piece(t1) && is_black_piece(t2))
+                    {
+                        if (!is_checked(A, t1, dr, sc + 1) && !is_checked(A, t2, dr, sc + 2))
+                        {
+                            if (A[sr][sc + 1] == '-' && A[sr][sc + 2] == '-')
+                                if (!vizB[2] && !vizB[3])
+                                {
+                                    A[sr][sc] = '-';
+                                    A[dr][dc] = '-';
+                                    A[sr][sc + 1] = t2;
+                                    A[sr][dc - 1] = t1;
+                                    vizB[2] = 1;
+                                    vizB[3] = 1;
+                                    ok = 1;
+                                }
+                        }
+                    }
+                }
+            }
+
+            if (!ok)
+            {
+                strcpy(msg, "Castling is not possible!");
                 write(fd, msg, strlen(msg));
                 return -2;
             }
+            else if (ok)
+            {
+                // PrintTable(A);
+                s = convert(A);
+                write(fd, s.c_str(), s.size());
+                cout << "Castling performed!" << endl;
+                verify = 1;
+                return s.size();
+            }
         }
-
-        if (move == 'a' && check(A, 'k'))
+        else if (!is_valid_move(A, type, sr, sc, dr, dc))
         {
-            strcpy(msg, "Move executed! The enemy's king is in check!");
-            s = convert(A);
-            bytes = s.size();
+            strcpy(msg, "Invalid move");
+            write(fd, msg, strlen(msg));
+            return -2;
         }
-        else if (move == 'b' && check(A, 'K'))
+        else if (is_valid_move(A, type, sr, sc, dr, dc))
         {
-            strcpy(msg, "Move executed! The enemy's king is in check!");
-            s = convert(A);
-            bytes = s.size();
+            A[sr][sc] = '-';
+            A[dr][dc] = type;
+            if (move == 'a' && check(A, 'K'))
+            {
+                strcpy(msg, "Invalid move! check!");
+                write(fd, msg, strlen(msg));
+                A[sr][sc] = type;
+                A[dr][dc] = save;
+                return -2;
+            }
+            else if (move == 'b' && check(A, 'k'))
+            {
+                strcpy(msg, "Invalid move! check!");
+                write(fd, msg, strlen(msg));
+                A[sr][sc] = type;
+                A[dr][dc] = save;
+                return -2;
+            }
+
+            // Transformation invalid for pawn when reaching the enemy's last row.
+            if (type == 'p' && dr == 1 && is_black_piece(transform) && (transform == 'b' || transform == 'c' || transform == 'q' || transform == 'r'))
+                A[sr][sc] = '-', A[dr][dc] = transform;
+            else if (type == 'P' && dr == 8 && is_white_piece(transform) && (transform == 'B' || transform == 'C' || transform == 'Q' || transform == 'R'))
+                A[sr][sc] = '-', A[dr][dc] = transform;
+            else if ((transform != 'b' || transform != 'c' || transform != 'q' || transform != 'r' || transform != 'B' || transform != 'C' || transform != 'Q' || transform != 'R') && (type == 'p' || type == 'P'))
+            {
+                if (dr == 1 || dr == 8)
+                {
+                    strcpy(msg, "Invalid transformation!");
+                    write(fd, msg, strlen(msg));
+                    return -2;
+                }
+            }
+
+            if (move == 'a' && check(A, 'k'))
+            {
+                strcpy(msg, "Move executed! The enemy's king is in check!");
+                s = convert(A);
+                bytes = s.size();
+            }
+            else if (move == 'b' && check(A, 'K'))
+            {
+                strcpy(msg, "Move executed! The enemy's king is in check!");
+                s = convert(A);
+                bytes = s.size();
+            }
+            else
+            {
+                strcpy(msg, "Move executed!");
+                s = convert(A);
+                bytes = s.size();
+            }
+
+            // PrintTable(A);
+
+            // cout << type << " It was moved from position " << c1 << " " << sr << " to position " << c2 << " " << dr << endl;
+            // cout << "Waiting for the other player's move!" << endl;
+
+            if (bytes && write(opponent_fd, s.c_str(), bytes) < 0)
+            {
+                perror("[server] Error in write() to the client.\n");
+                return 0;
+            }
+
+            if (strlen(msg) && write(fd, msg, strlen(msg)) < 0)
+            {
+                perror("[server] Error in write() to the client.\n");
+                return 0;
+            }
+
+            verify = 1;
+            return bytes;
         }
-        else
-        {
-            strcpy(msg, "Move executed!");
-            s = convert(A);
-            bytes = s.size();
-        }
-
-        // PrintTable(A);
-
-        // cout << type << " It was moved from position " << c1 << " " << sr << " to position " << c2 << " " << dr << endl;
-        // cout << "Waiting for the other player's move!" << endl;
-
-        if (bytes && write(opponent_fd, s.c_str(), bytes) < 0)
-        {
-            perror("[server] Error in write() to the client.\n");
-            return 0;
-        }
-
-        if (strlen(msg) && write(fd, msg, strlen(msg)) < 0)
-        {
-            perror("[server] Error in write() to the client.\n");
-            return 0;
-        }
-
-        verify = 1;
-        return bytes;
     }
 }
 
@@ -1249,6 +1423,8 @@ int main()
             Player *player = new Player;
             player->fd = client;
             player->free = 1;
+            player->logged_in = 0;
+
             cout << "got new one " << &player << ':' << player->fd << endl;
             unique_lock<mutex> lock(vector_mutex);
             online_players.push_back(player);
@@ -1294,6 +1470,7 @@ void *match_making_system(void *arg)
 {
     while (true)
     {
+        char A[9][9];
         if (match_making_players.size() < 2)
             continue;
         unique_lock<mutex> lock(queue_mutex);
@@ -1304,16 +1481,19 @@ void *match_making_system(void *arg)
         Player *player_b = match_making_players.front();
         match_making_players.pop();
 
-        cout << "yack" << player_a << ' ' << player_b << endl;
         lock.unlock();
 
+        // make initial board
+        create_table(A);
+        string s = convert(A);
         // thread for managing game play
-        PlayGameThreadData game_data;
-        game_data.player_a = player_a;
-        game_data.player_b = player_b;
+        PlayGameThreadData *game_data = new PlayGameThreadData;
+        game_data->player_a = player_a;
+        game_data->player_b = player_b;
+        game_data->initial_board = s;
 
         pthread_t tid;
-        int thread_check = pthread_create(&tid, NULL, &play_game, &game_data);
+        int thread_check = pthread_create(&tid, NULL, &play_game, game_data);
         if (thread_check != 0)
         {
             cerr << "Failed to create thread." << endl;
@@ -1333,6 +1513,7 @@ void *match_making_system(void *arg)
 void *play_game(void *arg)
 {
     char A[9][9];
+    create_table(A);
     int vizA[4] = {0};
     int vizB[4] = {0};
 
@@ -1340,12 +1521,14 @@ void *play_game(void *arg)
 
     Player(*a) = (data->player_a);
     Player(*b) = (data->player_b);
-    create_table(A);
+    string s = (data->initial_board);
     (*a).round = 1;
     (*b).round = 0;
 
     int ft = 0, current_fd;
     // Working ... need to constantly check surrender message from both players
+
+    string moves_played = "";
     while (1)
     {
         cout << "Game between " << (*a).fd << " and " << (*b).fd << endl;
@@ -1357,8 +1540,6 @@ void *play_game(void *arg)
 
             if (!ft)
             {
-                string s;
-                s = convert(A);
                 int bytes = s.size();
                 if (bytes && send(current_fd, s.c_str(), bytes, 0) < 0)
                 {
@@ -1367,7 +1548,7 @@ void *play_game(void *arg)
                 }
                 ft = 1;
             }
-            if (get_move(A, vizA, vizB, current_fd, (*b).fd, verify, 'a') == -1)
+            if (get_move(A, vizA, vizB, current_fd, (*b).fd, verify, 'a', moves_played) == -1)
             {
                 break;
             }
@@ -1382,7 +1563,7 @@ void *play_game(void *arg)
         {
             current_fd = (*b).fd;
             int verify = 0;
-            if (get_move(A, vizA, vizB, current_fd, (*a).fd, verify, 'b') == -1)
+            if (get_move(A, vizA, vizB, current_fd, (*a).fd, verify, 'b', moves_played) == -1)
             {
                 break;
             }

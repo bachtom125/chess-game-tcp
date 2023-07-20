@@ -64,9 +64,12 @@ enum class RequestType
 
 enum class RespondType
 {
-    MoveVerdict,       // Working ... needs implementing
-    GameResult,        // Working ... needs implementing
-    OnlinePlayersList, // Working ... needs implementing
+    Login,
+    Logout,
+    Move, // Working ... needs implementing
+    Challenge,
+    GameResult, // Working ... needs implementing
+    OnlinePlayersList,
 };
 
 string reverse_convert(int a[8][8])
@@ -289,13 +292,13 @@ int menu()
     int option;
     cout << endl;
     cout << "Menu:" << endl;
+    cout << "0. Log in" << endl;
     cout << "1. Matchmaking" << endl;
     cout << "2. Challenge Another Player" << endl;
     cout << "3. Exit" << endl;
     cout << "Enter your choice: ";
     fflush(stdin);
     cin >> option;
-    cout << "CHOSE" << option << "SDSD" << endl;
     return option;
 }
 
@@ -341,10 +344,10 @@ void *receive_game_data(void *arg)
     string s;
 
     int bytes;
-    char msg[500];
+    char msg[BUFF_SIZE];
     while (in_game)
     {
-        bytes = read(sd, msg, 500);
+        bytes = read(sd, msg, BUFF_SIZE);
         if (bytes < 0)
         {
             perror("[client]Error in read() from server.\n");
@@ -352,6 +355,7 @@ void *receive_game_data(void *arg)
         }
 
         msg[bytes] = '\0';
+        cout << "Message: " << msg << "||" << endl;
 
         if (strlen(msg) > 50) // receive a board, need to change this to check message type
         {
@@ -366,8 +370,6 @@ void *receive_game_data(void *arg)
             fflush(stdout);
         }
 
-        else
-            cout << "Message: " << msg << endl;
         if (strcmp(msg, "winner") == 0)
         {
             cout << "You won!!!" << endl;
@@ -386,6 +388,19 @@ void *receive_game_data(void *arg)
             cout << "Invalid move!" << endl;
         }
     }
+
+    char moves_played[BUFF_SIZE];
+    bytes = read(sd, moves_played, BUFF_SIZE);
+    if (bytes < 0)
+    {
+        perror("[client]Error in read() from server.\n");
+        int *result = new int(42);
+        pthread_exit(nullptr);
+    }
+
+    moves_played[bytes] = '\0';
+    cout << "Moves played" << endl;
+    cout << moves_played << endl;
 
     int *result = new int(42);
     pthread_exit(nullptr);
@@ -422,29 +437,55 @@ int main(int argc, char *argv[])
     }
 
     // GUI lets user choose option 1 - 3, the choice will be in 'option'
+    // temp variables
     int option, a[9][9];
     string s;
+    string username, password;
+    int board_int[8][8] =
+        {-1, -2, -3, -4, -5, -3, -2, -1,
+         -6, -6, -6, -6, -6, -6, -6, -6,
+         0, 0, 0, 0, 0, 0, 0, 0,
+         0, 0, 0, 0, 0, 0, 0, 0,
+         0, 0, 0, 0, 0, 0, 0, 0,
+         0, 0, 0, 0, 0, 0, 0, 0,
+         6, 6, 6, 6, 6, 6, 6, 6,
+         1, 2, 3, 4, 5, 3, 2, 1};
+
+    string board = reverse_convert(board_int);
+
     while (1)
     {
         fflush(stdin);
         option = menu();
 
-        json move_request, get_online_players_request, received_data, challenge_request;
-        int board[8][8] =
-            {-1, -2, -3, -4, -5, -3, -2, -1,
-             -6, -6, -6, -6, -6, -6, -6, -6,
-             0, 0, 0, 0, 0, 0, 0, 0,
-             0, 0, 0, 0, 0, 0, 0, 0,
-             0, 0, 0, 0, 0, 0, 0, 0,
-             0, 0, 0, 0, 0, 0, 0, 0,
-             6, 6, 6, 6, 6, 6, 6, 6,
-             1, 2, 3, 4, 5, 3, 2, 1};
+        json move_request, get_online_players_request, received_data, challenge_request, login_request;
 
-        string s;
-        int chosen_player;
-
+        string chosen_player;
         switch (option)
         {
+        case 0:
+            cout << "Enter username\npassword" << endl;
+            cin >> username;
+            cin >> password;
+            login_request["username"] = username;
+            login_request["password"] = password;
+            if (send_request(RequestType::Login, login_request, sd) == 0)
+            {
+                cout << "Failed to send log in request" << endl;
+                return 1;
+            }
+
+            received_data = receive_respond(sd);
+
+            if (received_data["type"] == RespondType::Login)
+            {
+                cout << received_data["message"] << endl;
+            }
+            else
+            {
+                cout << "Wrong respond types" << endl;
+            }
+            break;
         case 1:
             move_request["sd"] = sd;
             if (send_request(RequestType::MatchMaking, move_request, sd) == 0)
@@ -487,7 +528,7 @@ int main(int argc, char *argv[])
                     cout << "Online Players: ";
                     for (json player : online_players)
                     {
-                        cout << player["fd"] << ' ';
+                        cout << player["username"] << ':' << player["elo"] << endl;
                     }
                     cout << endl;
                 }
@@ -498,27 +539,20 @@ int main(int argc, char *argv[])
             }
 
             // now choose 1 player
-            chosen_player = received_data["data"][0]["fd"];
+            chosen_player = received_data["data"][0]["username"];
             // now send match request and picked user
+            challenge_request["challenger"] = username;
             challenge_request["opponent"] = chosen_player;
             challenge_request["board"] = board;
 
-            if (send_request(RequestType::Challenge, get_online_players_request, sd) == 0)
+            if (send_request(RequestType::Challenge, challenge_request, sd) == 0)
             {
                 cout << "Failed to send request" << endl;
                 return 1;
             }
+
             break;
-        // s = reverse_convert(board);
-        // // need to choose a player first
-        // move_request["board"] = s;
-        // if (send_request(RequestType::Challenge, move_request, sd) == 0)
-        // {
-        //     cout << "Failed to send move" << endl;
-        //     return 1;
-        // }
-        // cout << "Challenging another player..." << endl;
-        // break;
+
         case 3:
             if (send_request(RequestType::Logout, nullptr, sd) == 0)
             {
