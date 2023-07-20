@@ -53,6 +53,7 @@ struct Player
 enum class RequestType
 {
     Login,
+    Logout,
     MatchMaking,
     Challenge,
     Move,
@@ -428,7 +429,7 @@ int main(int argc, char *argv[])
         fflush(stdin);
         option = menu();
 
-        json move_request, get_online_players_request, received_data;
+        json move_request, get_online_players_request, received_data, challenge_request;
         int board[8][8] =
             {-1, -2, -3, -4, -5, -3, -2, -1,
              -6, -6, -6, -6, -6, -6, -6, -6,
@@ -440,6 +441,7 @@ int main(int argc, char *argv[])
              1, 2, 3, 4, 5, 3, 2, 1};
 
         string s;
+        int chosen_player;
 
         switch (option)
         {
@@ -495,9 +497,17 @@ int main(int argc, char *argv[])
                 }
             }
 
-            // now choose 1
-            int chosen_player = received_data["data"][0]["fd"];
-            // Working ... send challenge request containing a board
+            // now choose 1 player
+            chosen_player = received_data["data"][0]["fd"];
+            // now send match request and picked user
+            challenge_request["opponent"] = chosen_player;
+            challenge_request["board"] = board;
+
+            if (send_request(RequestType::Challenge, get_online_players_request, sd) == 0)
+            {
+                cout << "Failed to send request" << endl;
+                return 1;
+            }
             break;
         // s = reverse_convert(board);
         // // need to choose a player first
@@ -510,8 +520,13 @@ int main(int argc, char *argv[])
         // cout << "Challenging another player..." << endl;
         // break;
         case 3:
-            cout << "Exiting..." << endl;
+            if (send_request(RequestType::Logout, nullptr, sd) == 0)
+            {
+                cout << "Failed to send request" << endl;
+                return 0;
+            }
             return 0;
+            // Working ... maybe needs log out success respond from server
         default:
             cout << "Invalid choice. Please try again." << endl;
         }

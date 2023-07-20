@@ -13,7 +13,7 @@ add_executable(client client2.cpp)
 
 # Link against the required libraries
 # Find and import the nlohmann_json library
-find_package(nlohmann_json REQUIRED HINTS "../json-develop/cmake")
+find_package(nlohmann_json REQUIRED HINTS "../json-develop/build")
 
 # target_link_libraries(server PRIVATE jsoncpp)
 

@@ -29,6 +29,7 @@ extern int errno;
 enum class RequestType
 {
     Login,
+    Logout,
     MatchMaking,
     Challenge,
     Move,
@@ -39,6 +40,7 @@ enum class RequestType
 
 enum class RespondType
 {
+    LogoutSuccess,
     MoveVerdict,       // Working ... needs implementing
     GameResult,        // Working ... needs implementing
     OnlinePlayersList, // Working ... needs implementing
@@ -65,10 +67,10 @@ fd_set readfds;
 fd_set actfds;
 int v[250] = {0};
 
-vector<Player> online_players;
+vector<Player *> online_players;
 queue<Player *> match_making_players;
 
-mutex queue_mutex;
+mutex queue_mutex, vector_mutex;
 condition_variable queue_condition;
 struct PlayGameThreadData
 {
@@ -78,15 +80,21 @@ struct PlayGameThreadData
 
 void *client_operation(void *);
 void *play_game(void *);
+void *match_making_system(void *);
+
+bool disconnect_player(int);
 
 constexpr const char *ACCOUNTS_FILE = "accounts.txt";
 
 Player *find_online_player(int client_fd)
 {
-    for (Player &player : online_players)
+    for (Player *player : online_players)
     {
-        if (player.fd == client_fd)
-            return &player;
+        if (player->fd == client_fd)
+        {
+            cout << "He is " << &player << endl;
+            return player;
+        }
     }
     return NULL;
 }
@@ -181,6 +189,7 @@ void handleMatchMakingRequest(const json &requestData, int client_fd)
     // need to check if logged in
 
     Player *this_player = find_online_player(client_fd);
+    cout << "and he is " << client_fd << ':' << this_player << endl;
     if (!this_player)
     {
         printf("Player not online");
@@ -201,29 +210,28 @@ void handleMatchMakingRequest(const json &requestData, int client_fd)
 
 void handleChallengeRequest(const json &requestData, int client_fd)
 {
-
+    // get the board
+    // send notification to the other player
     // make a game with the recieved board
+}
+
+bool handleLogoutRequest(const json &requestData, int client_fd)
+{
+    return (disconnect_player(client_fd));
 }
 
 void handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
 {
-    // json respond_type;
-    // vector<Player> other_online_players;
-    // copy_if(online_players.begin(), online_players.end(), back_inserter(other_online_players),
-    //         [client_fd](Player player)
-    //         { return player.fd != client_fd; });
-
-    // respond_type["online_players_list"] = other_online_players;
 
     json respond_type;
 
-    for (const auto &player : online_players)
+    for (const auto *player : online_players)
     {
-        if (player.fd == client_fd)
+        if (player->fd == client_fd)
             continue;
         json playerJson;
-        playerJson["fd"] = player.fd;
-        playerJson["free"] = player.free;
+        playerJson["fd"] = player->fd;
+        playerJson["free"] = player->free;
         respond_type.push_back(playerJson);
     }
     cout << "GOT HERE THO" << endl;
@@ -265,12 +273,14 @@ void remove_player_from_matchmaking()
 {
     // Working
 }
-void disconnect_player(int fd)
+
+bool disconnect_player(int fd)
 {
+    cout << "HERE" << endl;
     auto it = online_players.begin();
     while (it != online_players.end())
     {
-        if ((*it).fd == fd)
+        if ((*it)->fd == fd)
             break;
 
         it++;
@@ -284,11 +294,13 @@ void disconnect_player(int fd)
     else
     {
         cout << "Player " << fd << " not found in online player vector list" << endl;
+        return 0;
     }
     FD_CLR(fd, &actfds);
     FD_CLR(fd, &readfds);
     close(fd);
     v[fd] = 0;
+    return 1;
 }
 
 json convert_to_json(string buffer, int bytes)
@@ -1231,10 +1243,10 @@ void print_server_state()
     }
     cout << endl;
 
-    vector<Player> temp = online_players;
+    vector<Player *> temp = online_players;
     cout << "Players online ";
-    for (Player i : temp)
-        cout << i.fd << ' ';
+    for (Player *i : temp)
+        cout << i->fd << ' ';
     cout << endl;
 }
 
@@ -1287,6 +1299,10 @@ int main()
 
     printf("[server] We are waiting at port %d...\n", PORT);
     fflush(stdout);
+
+    pthread_t match_making_system_tid;
+    pthread_create(&match_making_system_tid, NULL, &match_making_system, NULL);
+
     while (1)
     {
         bcopy((char *)&actfds, (char *)&readfds, sizeof(readfds));
@@ -1316,10 +1332,13 @@ int main()
             printf("[server] Client with descriptor %d has connected, from address %s.\n", client, conv_addr(from));
             fflush(stdout);
 
-            Player player;
-            player.fd = client;
-            player.free = 1;
+            Player *player = new Player;
+            player->fd = client;
+            player->free = 1;
+            cout << "got new one " << &player << ':' << player->fd << endl;
+            unique_lock<mutex> lock(vector_mutex);
             online_players.push_back(player);
+            lock.unlock();
 
             pthread_t tid;
             // new client connected, make a thread to handle him
@@ -1327,42 +1346,43 @@ int main()
         }
 
         // handling matchmaking (can be put into a separate thread in the future if needed)
-        int i = 0;
-        while (match_making_players.size() >= 2)
-        {
-            Player *player_a = match_making_players.front();
-            match_making_players.pop();
-            Player *player_b = match_making_players.front();
-            match_making_players.pop();
+        // int i = 0;
+        // while (match_making_players.size() >= 2)
+        // {
 
-            // change their state to busy (already done when chose to match make)
-            // player_a->free = 0;
-            // player_b->free = 0;
+        //     Player *player_a = match_making_players.front();
+        //     match_making_players.pop();
+        //     Player *player_b = match_making_players.front();
+        //     match_making_players.pop();
+        //     cout << player_a->fd << " and " << player_b->fd << endl;
 
-            // cout << "The size now is " << match_making_players.() << endl;
+        //     // change their state to busy (already done when chose to match make)
+        //     // player_a->free = 0;
+        //     // player_b->free = 0;
 
-            // thread for managing game play
-            PlayGameThreadData game_data;
-            game_data.player_a = player_a;
-            game_data.player_b = player_b;
+        //     // cout << "The size now is " << match_making_players.() << endl;
 
-            pthread_t tid;
-            pthread_create(&tid, NULL, &play_game, &game_data);
-        }
+        //     // thread for managing game play
+        //     PlayGameThreadData game_data;
+        //     game_data.player_a = player_a;
+        //     game_data.player_b = player_b;
+
+        //     cout << "new game between " << player_a->fd << " and " << player_b->fd << endl;
+        //     pthread_t tid;
+        //     pthread_create(&tid, NULL, &play_game, &game_data);
+        // }
     }
     close(sd);
 }
 
 // Thread function for the matchmaking system
-void match_making_system()
+void *match_making_system(void *arg)
 {
     while (true)
     {
+        if (match_making_players.size() < 2)
+            continue;
         unique_lock<mutex> lock(queue_mutex);
-
-        // Wait until there are at least two players in the queue
-        queue_condition.wait(lock, []
-                             { return match_making_players.size() >= 2; });
 
         // Pair the first two players in the queue
         Player *player_a = match_making_players.front();
@@ -1370,6 +1390,7 @@ void match_making_system()
         Player *player_b = match_making_players.front();
         match_making_players.pop();
 
+        cout << "yack" << player_a << ' ' << player_b << endl;
         lock.unlock();
 
         // thread for managing game play
@@ -1382,7 +1403,7 @@ void match_making_system()
         if (thread_check != 0)
         {
             cerr << "Failed to create thread." << endl;
-            return;
+            break;
         }
 
         // Wait for the game thread to finish
@@ -1403,7 +1424,7 @@ void *play_game(void *arg)
 
     PlayGameThreadData *data = (PlayGameThreadData *)arg;
 
-    Player *a = (data->player_a);
+    Player(*a) = (data->player_a);
     Player(*b) = (data->player_b);
     create_table(A);
     (*a).round = 1;
@@ -1471,7 +1492,10 @@ void *client_operation(void *arg)
 {
     int client_fd = *((int *)arg);
 
+    unique_lock<mutex> lock(vector_mutex);
     Player *this_player = find_online_player(client_fd);
+    lock.unlock();
+
     int connected = 1;
     while (connected)
     {
@@ -1519,6 +1543,12 @@ void *client_operation(void *arg)
             {
                 cout << "Received challenge request from " << client_fd << endl;
                 handleChallengeRequest(jsonData["data"], client_fd);
+            }
+            else if (requestType == static_cast<int>(RequestType::Logout))
+            {
+                cout << "Received logout request from " << client_fd << endl;
+                if (handleLogoutRequest(jsonData["data"], client_fd))
+                    connected = 0;
             }
 
             // else

@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/mnt/e/TOM/HUST/20222/Network Programming/Project/chess-game-tcp/client2.cpp" "CMakeFiles/client.dir/client2.cpp.o" "gcc" "CMakeFiles/client.dir/client2.cpp.o.d"
+  "/mnt/d/TOM/HUST STUFF/20222/Network Programming/Final Project/chess-game-tcp/client2.cpp" "CMakeFiles/client.dir/client2.cpp.o" "gcc" "CMakeFiles/client.dir/client2.cpp.o.d"
   )
 
 # Targets to which this target links.
