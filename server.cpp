@@ -172,7 +172,7 @@ bool send_respond(RespondType type, const json &respond_data, int sd)
     return 1;
 }
 
-void handleMatchMakingRequest(const json &requestData, int client_fd)
+bool handleMatchMakingRequest(const json &requestData, int client_fd)
 {
     // need to check if logged in
     Player *this_player = find_online_player(client_fd);
@@ -181,7 +181,7 @@ void handleMatchMakingRequest(const json &requestData, int client_fd)
     {
         printf("Player not online");
         // hanlde this case
-        return;
+        return 0;
     }
 
     // if reaches here, then player is both logged in and online
@@ -190,12 +190,15 @@ void handleMatchMakingRequest(const json &requestData, int client_fd)
     this_player->free = 0;
     while (1)
     {
+        if (!this_player)
+            return 0;
         if (this_player->free == 1)
             break;
     }
+    return 1;
 }
 
-void handleChallengeRequest(const json &requestData, int client_fd)
+bool handleChallengeRequest(const json &requestData, int client_fd)
 {
     // get the board
     string board = requestData["board"];
@@ -213,8 +216,11 @@ void handleChallengeRequest(const json &requestData, int client_fd)
     if (send_request(RequestType::Challenge, respond_type, opponent_fd) == 0)
     {
         cout << "Failed to send out challenge to " << opponent_fd << endl;
+        disconnect_player(client_fd);
+        return 0;
     }
     // make a game with the recieved board
+    return 1;
 }
 
 bool handleLogoutRequest(const json &requestData, int client_fd)
@@ -222,7 +228,7 @@ bool handleLogoutRequest(const json &requestData, int client_fd)
     return (disconnect_player(client_fd));
 }
 
-void handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
+bool handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
 {
     json respond_type;
 
@@ -241,7 +247,10 @@ void handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
     if (send_respond(RespondType::OnlinePlayersList, respond_type, client_fd) == 0)
     {
         cout << "Failed to send online players list to " << client_fd << endl;
+        disconnect_player(client_fd);
+        return 0;
     }
+    return 1;
 }
 
 void remove_player_from_matchmaking()
@@ -856,6 +865,31 @@ int check_mate(char A[9][9], char type)
     return 0;
 }
 
+void update_elo(int loser_fd, int winner_fd)
+{
+    vector<User> users = readAccountsFile();
+    Player *winner = find_online_player(winner_fd);
+    User winner_user = findUserByUsername(winner->username);
+
+    Player *loser = find_online_player(loser_fd);
+    User loser_user = findUserByUsername(loser->username);
+    int amount = abs(winner->elo - loser->elo) / 2;
+    winner_user.elo += amount;
+    winner->elo += amount;
+
+    loser_user.elo -= amount;
+    loser->elo -= amount;
+
+    for (User &user : users)
+    {
+        if (user.username == winner_user.username)
+            user = winner_user;
+        if (user.username == loser_user.username)
+            user = loser_user;
+    }
+    writeAccountsFile(users);
+}
+
 void send_result(int loser_fd, int winner_fd, string moves_played)
 {
     char msg[BUFF_SIZE];
@@ -899,11 +933,9 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
     char msgrasp[BUFF_SIZE] = " ";
 
     bytes = read(fd, buffer, sizeof(buffer));
-    if (bytes < 0)
+    if (bytes <= 0)
     {
         printf("Error in read() from the client.\n");
-        disconnect_player(fd);
-
         return 0;
     }
     // // testing begin
@@ -976,19 +1008,22 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
     if (move == 'a' && is_black_piece(type))
     {
         strcpy(msg, "Invalid move");
-        write(fd, msg, strlen(msg));
+        if (write(fd, msg, strlen(msg)) < 0)
+            return 0;
         return -2;
     }
     else if (move == 'b' && is_white_piece(type))
     {
         strcpy(msg, "Invalid move");
-        write(fd, msg, strlen(msg));
+        if (write(fd, msg, strlen(msg)) < 0)
+            return 0;
         return -2;
     }
     else if (A[sr][sc] == '-')
     {
         strcpy(msg, "Invalid move");
-        write(fd, msg, strlen(msg));
+        if (write(fd, msg, strlen(msg)) < 0)
+            return 0;
         return -2;
     }
 
@@ -999,18 +1034,19 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
         // cout << "current moves played: " << moves_played << endl;
         if (strcmp(msg, "surrender\n") == 0)
         {
+            update_elo(fd, opponent_fd);
             send_result(fd, opponent_fd, moves_played);
             return -1;
         }
         else if (move == 'a' && check_mate(A, 'K'))
         {
-
+            update_elo(fd, opponent_fd);
             send_result(fd, opponent_fd, moves_played);
             return -1;
         }
         else if (move == 'b' && check_mate(A, 'k'))
         {
-
+            update_elo(opponent_fd, fd);
             send_result(opponent_fd, fd, moves_played);
             return -1;
         }
@@ -1112,14 +1148,16 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             if (!ok)
             {
                 strcpy(msg, "Castling is not possible!");
-                write(fd, msg, strlen(msg));
+                if (write(fd, msg, strlen(msg)) < 0)
+                    return 0;
                 return -2;
             }
             else if (ok)
             {
                 // PrintTable(A);
                 s = convert(A);
-                write(fd, s.c_str(), s.size());
+                if (write(fd, s.c_str(), s.size()) < 0)
+                    return 0;
                 cout << "Castling performed!" << endl;
                 verify = 1;
                 return s.size();
@@ -1128,7 +1166,8 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
         else if (!is_valid_move(A, type, sr, sc, dr, dc))
         {
             strcpy(msg, "Invalid move");
-            write(fd, msg, strlen(msg));
+            if (write(fd, msg, strlen(msg)) < 0)
+                return 0;
             return -2;
         }
         else if (is_valid_move(A, type, sr, sc, dr, dc))
@@ -1138,7 +1177,9 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             if (move == 'a' && check(A, 'K'))
             {
                 strcpy(msg, "Invalid move! check!");
-                write(fd, msg, strlen(msg));
+                if (write(fd, msg, strlen(msg)) < 0)
+                    return 0;
+
                 A[sr][sc] = type;
                 A[dr][dc] = save;
                 return -2;
@@ -1146,7 +1187,8 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             else if (move == 'b' && check(A, 'k'))
             {
                 strcpy(msg, "Invalid move! check!");
-                write(fd, msg, strlen(msg));
+                if (write(fd, msg, strlen(msg)) < 0)
+                    return 0;
                 A[sr][sc] = type;
                 A[dr][dc] = save;
                 return -2;
@@ -1162,7 +1204,8 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                 if (dr == 1 || dr == 8)
                 {
                     strcpy(msg, "Invalid transformation!");
-                    write(fd, msg, strlen(msg));
+                    if (write(fd, msg, strlen(msg)) < 0)
+                        return 0;
                     return -2;
                 }
             }
@@ -1450,8 +1493,6 @@ void *play_game(void *arg)
     string moves_played = "";
     while (1)
     {
-        cout << "Game between " << (*a).fd << " and " << (*b).fd << endl;
-
         if ((*a).round == 1)
         {
             current_fd = (*a).fd;
@@ -1469,9 +1510,18 @@ void *play_game(void *arg)
                 }
                 ft = 1;
             }
-            if (get_move(A, vizA, vizB, current_fd, (*b).fd, verify, 'a', moves_played) == -1)
+            int get_move_result = get_move(A, vizA, vizB, current_fd, (*b).fd, verify, 'a', moves_played);
+            if (get_move_result == -1)
             {
                 break;
+            }
+            else if (get_move_result == 0)
+            {
+                a->free = 1;
+                b->free = 1;
+                disconnect_player(current_fd);
+                int *result = new int(42);
+                pthread_exit(result);
             }
             else if (verify == 1)
             {
@@ -1484,9 +1534,18 @@ void *play_game(void *arg)
         {
             current_fd = (*b).fd;
             int verify = 0;
-            if (get_move(A, vizA, vizB, current_fd, (*a).fd, verify, 'b', moves_played) == -1)
+            int get_move_result = get_move(A, vizA, vizB, current_fd, (*a).fd, verify, 'b', moves_played);
+            if (get_move_result == -1)
             {
                 break;
+            }
+            else if (get_move_result == 0)
+            {
+                a->free = 1;
+                b->free = 1;
+                disconnect_player(current_fd);
+                int *result = new int(42);
+                pthread_exit(result);
             }
             else if (verify == 1)
             {
@@ -1630,22 +1689,26 @@ void *client_operation(void *arg)
             if (requestType == static_cast<int>(RequestType::Login))
             {
                 cout << "Received login request from " << client_fd << endl;
-                handleLoginRequest(jsonData["data"], client_fd);
+                if (!handleLoginRequest(jsonData["data"], client_fd))
+                    connected = 0;
             }
             else if (requestType == static_cast<int>(RequestType::MatchMaking))
             {
                 cout << "Received matchmaking request from " << client_fd << endl;
-                handleMatchMakingRequest(jsonData["data"], client_fd);
+                if (!handleMatchMakingRequest(jsonData["data"], client_fd))
+                    connected = 0;
             }
             else if (requestType == static_cast<int>(RequestType::GetOnlinePlayersList))
             {
                 cout << "Received online players list request from " << client_fd << endl;
-                handleGetOnlinePlayersListRequest(jsonData["data"], client_fd);
+                if (!handleGetOnlinePlayersListRequest(jsonData["data"], client_fd))
+                    connected = 0;
             }
             else if (requestType == static_cast<int>(RequestType::Challenge))
             {
                 cout << "Received challenge request from " << client_fd << endl;
-                handleChallengeRequest(jsonData["data"], client_fd);
+                if (!handleChallengeRequest(jsonData["data"], client_fd))
+                    connected = 0;
             }
             else if (requestType == static_cast<int>(RequestType::Logout))
             {
