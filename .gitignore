@@ -1,3 +1,4 @@
 **/.vs
 /GUI/.vs
 CMakeList.txt
+**/build
