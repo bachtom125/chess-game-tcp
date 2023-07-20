@@ -901,7 +901,9 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
     bytes = read(fd, buffer, sizeof(buffer));
     if (bytes < 0)
     {
-        perror("Error in read() from the client.\n");
+        printf("Error in read() from the client.\n");
+        disconnect_player(fd);
+
         return 0;
     }
     // // testing begin
@@ -1191,13 +1193,17 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
 
             if (bytes && write(opponent_fd, s.c_str(), bytes) < 0)
             {
-                perror("[server] Error in write() to the client.\n");
+                printf("[server] Error in write() to the client.\n");
+                disconnect_player(opponent_fd);
+
                 return 0;
             }
 
             if (strlen(msg) && write(fd, msg, strlen(msg)) < 0)
             {
-                perror("[server] Error in write() to the client.\n");
+                printf("[server] Error in write() to the client.\n");
+                disconnect_player(fd);
+
                 return 0;
             }
 
@@ -1456,7 +1462,9 @@ void *play_game(void *arg)
                 int bytes = s.size();
                 if (bytes && send(current_fd, s.c_str(), bytes, 0) < 0)
                 {
-                    perror("[server] Error in send() to the client.\n");
+                    printf("[server] Error in send() to the client.\n");
+                    disconnect_player(current_fd);
+
                     return 0;
                 }
                 ft = 1;
@@ -1595,10 +1603,12 @@ void *client_operation(void *arg)
         cout << "waiting for " << client_fd << " to choose an option" << endl;
         std::array<char, 1024> buffer{};
         ssize_t bytesRead = recv(client_fd, buffer.data(), buffer.size(), 0);
+        cout << "BYTES READ " << bytesRead << endl;
         if (bytesRead <= 0)
         {
             cerr << "Error receiving data" << endl;
-            close(client_fd);
+            disconnect_player(client_fd);
+            connected = 0;
             continue;
         }
         // Parse the received data into JSON
