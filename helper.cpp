@@ -9,15 +9,21 @@
 using namespace std;
 typedef long long ll;
 vector<int> list;
+struct a
+{
+    string a = "";
+};
 
+void putout(a *var)
+{
+    cout << var->a << endl;
+}
 int main()
 {
-    ios_base::sync_with_stdio(0);
-    cin.tie(0);
-    cout.tie(0);
+    string b = "BONGBONGBONGBONGBONG";
 
-    list.push_back(1);
-    list.push_back(2);
-
+    a var;
+    var.a = b;
+    putout(&var);
     return 0;
 }

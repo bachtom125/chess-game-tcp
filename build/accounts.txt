@@ -1,2 +1,2 @@
-luatdt abcd 2500
-bachdan abcd 2500
+luat ngu 2500
+bach tom 2500

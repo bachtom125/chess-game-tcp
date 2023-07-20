@@ -1,1 +1,2 @@
-user pass
+bach tom 5000
+luat ngu 5000
