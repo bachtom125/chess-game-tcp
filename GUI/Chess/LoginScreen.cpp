@@ -129,7 +129,7 @@ void LoginScreen::validateLogin()
 }
 
 void LoginScreen::handleLoginResponse(json json_data) {
-	if (json_data["success"])
+	if (json_data["data"]["success"].get<bool>())
 	{
 		User newUser;
 		std::cout << "user: " << json_data["data"].dump() << std::endl;

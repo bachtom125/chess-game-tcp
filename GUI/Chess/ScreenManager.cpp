@@ -38,6 +38,7 @@ void ScreenManager::handleEvents()
             if (loginScreen.isLoginSuccessful)
             {
                 mainMenu.user = loginScreen.user;
+                chessBoardScreen.user = loginScreen.user;
                 currentScreen = Screen::MainMenu;
                 std::cout << "Login success" << std::endl;
             }
@@ -61,7 +62,7 @@ void ScreenManager::update()
         if (loginScreen.isLoginSuccessful)
         {
             mainMenu.user = loginScreen.user;
-            
+            chessBoardScreen.user = loginScreen.user;
             currentScreen = Screen::MainMenu;
             user = loginScreen.user;
         }
@@ -114,7 +115,7 @@ void ScreenManager::handleServerResponses()
             if (responseType == RespondType::Move)
             {
                 // Process the move response from the server
-                chessBoardScreen.receiveGameStateResponse(response["data"].dump());
+                chessBoardScreen.receiveGameStateResponse(response);
             }
             else if (responseType == RespondType::MatchMaking)
             {
@@ -128,6 +129,25 @@ void ScreenManager::handleServerResponses()
          }
     }
 }
+
+void ChessBoardScreen::displayErrorMessage(const std::string& message)
+{
+    // Replace this with your actual implementation to display an error message
+    // For example, you can use an sf::Text object to render the message on the screen
+    sf::Text errorMessage;
+    errorMessage.setFont(font);
+    errorMessage.setCharacterSize(16);
+    errorMessage.setFillColor(sf::Color::Red);
+    errorMessage.setString(message);
+    errorMessage.setPosition(300, 475);
+
+    window.draw(errorMessage);
+    window.display();
+
+    // Optionally, you can add a delay to show the error message for a certain duration before clearing it
+    sf::sleep(sf::seconds(2));
+}
+
 
 void ScreenManager::startListeningToServerResponses()
 {

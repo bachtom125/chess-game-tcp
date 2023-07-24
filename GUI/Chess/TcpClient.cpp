@@ -45,6 +45,15 @@ bool TcpClient::receive(std::string& receivedData)
 
 
         receivedData = std::string(buffer, received);
+
+        // Find the position of the first opening brace '{'
+        size_t bracePos = receivedData.find_first_of('{');
+        if (bracePos != std::string::npos)
+        {
+            // Extract the substring from the brace position until the end of the string
+            receivedData = receivedData.substr(bracePos);
+        }
+
         std::cout << "receieved: " << received << std::endl;
         std::cout << "receievedData: " << receivedData << std::endl;
         return true;
@@ -68,8 +77,11 @@ bool TcpClient::sendRequest(RequestType type, const json& requestData)
     sf::Packet packet;
     packet << serializedRequest;
 
-    std::cout << "Serialized request: " << requestData << std::endl;
+    std::cout << "Serialized request: " << serializedRequest << std::endl;
 
     sf::Socket::Status status = socket.send(packet);
+
+    std::cout << "Serialized request after sent: " << serializedRequest << std::endl;
+
     return (status == sf::Socket::Done);
 }
