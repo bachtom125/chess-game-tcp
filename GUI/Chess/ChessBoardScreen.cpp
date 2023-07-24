@@ -241,7 +241,7 @@ bool containsSubstring(const std::string& str, const std::string& substring) {
 }
 
 void ChessBoardScreen::handleMatchMakingResponse(json response) {
-    bool found = response["success"].get<bool>();
+    bool found = response["data"]["success"].get<bool>();
 
     if (found)
     {
@@ -268,15 +268,17 @@ void ChessBoardScreen::receiveGameStateResponse(json response)
     // Update the game state, chess board, and other relevant data based on the received data
 
 
-    std::string responseString = response["data"].dump();
-    std::cout << "gamestate responseString: " << responseString << std::endl;
-    if (response["success"].get<bool>())
+
+    if (response["data"]["success"].get<bool>())
     {
-        convertBoardResponse(board, json::parse(responseString));
-        
+        std::string responseString = response["data"]["board"].get<std::string>();
+        convertBoardResponse(board, responseString);
+        std::cout << "gamestate responseString: " << responseString << std::endl;
+        std::cout << "Server shouted: " << response["data"]["message"].get<std::string>() << std::endl;
     }
     else {
-        displayErrorMessage(response["message"]);
+        displayErrorMessage(response["data"]["message"].get<std::string>());
+        return;
     }
     
     for (int i = 0; i < 8; i++) {

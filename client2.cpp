@@ -61,11 +61,11 @@ enum class RequestType
     SomeOtherRequest,
     // Add more request types as needed
 };
-
 enum class RespondType
 {
     Login,
     Logout,
+    MatchMaking,
     Move, // Working ... needs implementing
     Challenge,
     GameResult, // Working ... needs implementing
@@ -139,7 +139,6 @@ bool send_request(RequestType type, const json &request_data, int sd)
 
     // Serialize the request JSON
     string serializedRequest = request.dump();
-    cout << "about to send this bro" << serializedRequest << endl;
     if (send(sd, serializedRequest.c_str(), serializedRequest.size(), 0) == -1)
     {
         cerr << "Error occurred while sending the request to the server." << endl;
@@ -181,12 +180,12 @@ json receive_respond(int sd) // get respond and return corresponding json object
 
 // need to add client receiving results sent by server after the game's over
 bool in_game = 0;
-void convert(int a[8][8], string s)
+void convert(int a[9][9], string s)
 {
     int i, j, k = 0;
-    for (i = 0; i < 8; i++)
+    for (i = 1; i <= 8; i++)
     {
-        for (j = 0; j < 8; j++)
+        for (j = 1; j <= 8; j++)
         {
             switch (s[k++])
             {
@@ -347,60 +346,80 @@ void *receive_game_data(void *arg)
     char msg[BUFF_SIZE];
     while (in_game)
     {
-        bytes = read(sd, msg, BUFF_SIZE);
-        if (bytes < 0)
+        array<char, 1024> buffer{};
+        ssize_t bytesRead = recv(sd, buffer.data(), buffer.size(), 0);
+        if (bytesRead <= 0)
         {
-            perror("[client]Error in read() from server.\n");
-            break;
-        }
-
-        msg[bytes] = '\0';
-        cout << "Message: " << msg << "||" << endl;
-
-        if (strlen(msg) > 50) // receive a board, need to change this to check message type
-        {
-            s.resize(100);
-            convert(a, msg);
-            cout << "Received new board" << endl;
-            print_board(a);
-            cout << endl;
-
-            bzero(msg, 100);
-            printf("[client]Enter your desired move: ");
-            fflush(stdout);
-        }
-
-        if (strcmp(msg, "winner") == 0)
-        {
-            cout << "You won!!!" << endl;
+            cerr << "Error receiving data" << endl;
             in_game = 0;
-            break;
-        }
-        if (strcmp(msg, "loser") == 0)
-        {
-            cout << "You lost!!!" << endl;
-            in_game = 0;
-            break;
+            continue;
         }
 
-        if (strcmp(msg, "Invalid move") == 0)
+        // Parse the received data into JSON
+        string responseData(buffer.data(), bytesRead);
+        // Find the position of the first opening brace '{'
+        size_t bracePos = responseData.find_first_of('{');
+        if (bracePos != string::npos)
         {
-            cout << "Invalid move!" << endl;
+            // Extract the substring from the brace position until the end of the string
+            string jsonSubstring = responseData.substr(bracePos);
+
+            // Parse the extracted JSON substring
+            json jsonData = json::parse(jsonSubstring);
+            cout << "server said: " << jsonData << endl;
+
+            // Determine the type of request and dispatch to the appropriate handler
+            int responseType = jsonData["type"];
+            json received_data = jsonData["data"];
+            string message = received_data["message"];
+
+            if (responseType == static_cast<int>(RespondType::Move))
+            {
+                cout << "server said: " << message << endl;
+                string board = "";
+                if (received_data.contains("board"))
+                    board = received_data["board"];
+                // working ...
+                if (strcmp(msg, "Invalid move") == 0)
+                {
+                    cout << "Invalid move!" << endl;
+                }
+
+                if (board != "") // receive a board, need to change this to check message type
+                {
+                    board.resize(100);
+                    convert(a, board.c_str());
+                    cout << "Received new board" << endl;
+                    print_board(a);
+                    cout << endl;
+
+                    printf("[client]Enter your desired move: ");
+                    fflush(stdout);
+                }
+            }
+            else if (responseType == static_cast<int>(RespondType::GameResult))
+            {
+                if (message == "winner")
+                {
+                    cout << "You won!!!" << endl;
+                    in_game = 0;
+                }
+                if (message == "loser")
+                {
+                    cout << "You lost!!!" << endl;
+                    in_game = 0;
+                }
+                string moves_played = received_data["log"];
+                cout << "Moves played" << endl;
+                cout << moves_played << endl;
+                break;
+            }
+            else if (responseType == static_cast<int>(RespondType::MatchMaking))
+            {
+                cout << message << received_data << endl;
+            }
         }
     }
-
-    char moves_played[BUFF_SIZE];
-    bytes = read(sd, moves_played, BUFF_SIZE);
-    if (bytes < 0)
-    {
-        perror("[client]Error in read() from server.\n");
-        int *result = new int(42);
-        pthread_exit(nullptr);
-    }
-
-    moves_played[bytes] = '\0';
-    cout << "Moves played" << endl;
-    cout << moves_played << endl;
 
     int *result = new int(42);
     pthread_exit(nullptr);

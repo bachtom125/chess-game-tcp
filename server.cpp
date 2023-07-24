@@ -21,7 +21,6 @@
 
 #define PORT 5500
 #define BUFF_SIZE 1024
-
 using namespace std;
 using json = nlohmann::json;
 
@@ -91,7 +90,7 @@ struct PlayGameThreadData
 void *client_operation(void *);
 void *play_game(void *);
 void *match_making_system(void *);
-std::vector<User> readAccountsFile();
+
 bool disconnect_player(int);
 
 constexpr const char *ACCOUNTS_FILE = "accounts.txt";
@@ -109,29 +108,29 @@ Player *find_online_player(int client_fd)
     return NULL;
 }
 
-User findUserByUsername(const string &username)
+vector<User> readAccountsFile()
 {
-    vector<User> users = readAccountsFile();
-    for (const User &user : users)
+    vector<User> users;
+    ifstream accountsFile("accounts.txt");
+    if (!accountsFile)
     {
-        if (user.username == username)
+        cerr << "Failed to open accounts file" << endl;
+        return users;
+    }
+
+    string line;
+    while (getline(accountsFile, line))
+    {
+        istringstream iss(line);
+        User user;
+        if (iss >> user.username >> user.password >> user.elo)
         {
-            return user;
+            users.push_back(user);
+            cout << '.' << user.username << '.' << user.password << '.' << user.elo << '.' << endl;
         }
     }
 
-    // Return a default-constructed User object if the user is not found
-    return User();
-}
-
-int find_player_fd(const string username)
-{
-    for (Player *player : online_players)
-    {
-        if (player->username == username)
-            return player->fd;
-    }
-    return -1;
+    return users;
 }
 
 bool writeAccountsFile(vector<User> users)
@@ -156,6 +155,56 @@ bool writeAccountsFile(vector<User> users)
         return 0;
     }
     return 1;
+}
+User findUserByUsername(const string &username)
+{
+    vector<User> users = readAccountsFile();
+    for (const User &user : users)
+    {
+        if (user.username == username)
+        {
+            return user;
+        }
+    }
+
+    // Return a default-constructed User object if the user is not found
+    return User();
+}
+
+bool isUserValid(const string &username, const string &password)
+{
+    ifstream accounts(ACCOUNTS_FILE);
+    if (!accounts)
+    {
+        cerr << "Failed to open accounts file" << endl;
+        return false;
+    }
+
+    string line;
+    while (getline(accounts, line))
+    {
+        string storedUsername, storedPassword;
+        istringstream iss(line);
+        if (iss >> storedUsername >> storedPassword)
+        {
+            if (storedUsername == username && storedPassword == password)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+int find_player_fd(const string username)
+{
+    for (Player *player : online_players)
+    {
+        if (player->username == username)
+            return player->fd;
+    }
+    return -1;
 }
 
 bool send_request(RequestType type, const json &request_data, int sd)
@@ -278,6 +327,64 @@ bool handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
     return 1;
 }
 
+bool handleLoginRequest(const json &requestData, int client_fd)
+{
+    string username = requestData["username"];
+    string password = requestData["password"];
+
+    cout << username << endl;
+    cout << password << endl;
+
+    // Perform login validation/authentication logic
+    User user = findUserByUsername(username);
+    bool isCorrectInfo = (user.username == username && user.password == password);
+    int isOnline = find_player_fd(username);
+    bool isValid = isCorrectInfo && (isOnline == -1);
+
+    // Craft the response JSON
+    json response;
+    response["success"] = isValid;
+
+    if (!isCorrectInfo)
+        response["message"] = "Invalid username or password";
+    else if (isOnline != -1)
+        response["message"] = "User already online";
+    else
+        response["message"] = "Login successful";
+
+    if (isValid)
+    {
+        Player *this_player = find_online_player(client_fd);
+        this_player->username = username;
+        this_player->logged_in = 1;
+        this_player->elo = user.elo;
+
+        cout << "Player " << username << " logged in with fd " << client_fd << endl;
+
+        response["username"] = user.username;
+        response["password"] = user.password;
+        response["elo"] = user.elo;
+    }
+    else
+        cout << "Client " << client_fd << " failed to log in" << endl;
+
+    // Send the response back to the client
+    if (send_respond(RespondType::Login, response, client_fd) == 0)
+    {
+        cout << "Failed to send result to " << client_fd << endl;
+        disconnect_player(client_fd);
+        return 0;
+    }
+    return 1;
+
+    // if (send(client_fd, responseStr.c_str(), responseStr.size(), 0) == -1)
+    // {
+    //     cout << "Failed to send response to client" << endl;
+    //     disconnect_player(client_fd);
+    //     return 0;
+    // }
+}
+
 void remove_player_from_matchmaking()
 {
     // Working
@@ -311,8 +418,19 @@ bool disconnect_player(int fd)
     return 1;
 }
 
-json convert_to_json(string buffer)
+json convert_to_json(string buffer, int bytes)
 {
+    // handle before calling ...
+    // array<char, 1024> buffer{};
+    // ssize_t bytes = recv(client_fd, buffer, buffer.size(), 0);
+    // if (bytes <= 0)
+    // {
+    //     cerr << "Error receiving data" << endl;
+    //     close(client_fd);
+    //     continue;
+    // }
+    // Parse the received data into JSON
+    // string respond_type(buffer, bytes);
     string request_data = buffer;
     cout << request_data << endl;
     // Find the position of the first opening brace '{'
@@ -920,61 +1038,68 @@ void send_result(int loser_fd, int winner_fd, string moves_played)
     char msg[BUFF_SIZE];
     strcpy(msg, "winner");
     cout << "ALL MOVES " << moves_played << endl;
-    // send result
-    if (write(winner_fd, msg, BUFF_SIZE) < 0)
+
+    json respond_type;
+    respond_type["message"] = msg;
+    respond_type["log"] = moves_played;
+    if (send_respond(RespondType::GameResult, respond_type, winner_fd) == 0)
     {
-        cerr << "Error occurred while sending message to the Winner." << endl;
+        cout << "Failed to send result to " << winner_fd << endl;
+        disconnect_player(winner_fd);
+        return;
     }
+    // if (write(winner_fd, msg, BUFF_SIZE) < 0)
+    // {
+    //     cerr << "Error occurred while sending message to the Winner." << endl;
+    // }
 
     // send moves played
-    if (write(winner_fd, moves_played.c_str(), moves_played.size()) < 0)
-    {
-        cerr << "Error occurred while sending moves to the Winner." << endl;
-    }
+    // if (write(winner_fd, moves_played.c_str(), moves_played.size()) < 0)
+    // {
+    //     cerr << "Error occurred while sending moves to the Winner." << endl;
+    // }
 
-    // send match result
     strcpy(msg, "loser");
-    if (write(loser_fd, msg, BUFF_SIZE) < 0)
+    respond_type["message"] = msg;
+    if (send_respond(RespondType::GameResult, respond_type, loser_fd) == 0)
     {
-        cerr << "Error occurred while sending message to the Loser" << endl;
+        cout << "Failed to send result to " << loser_fd << endl;
+        disconnect_player(loser_fd);
+        return;
     }
+    // send match result
+    // if (write(loser_fd, msg, BUFF_SIZE) < 0)
+    // {
+    //     cerr << "Error occurred while sending message to the Loser" << endl;
+    // }
 
-    // send moves played
-    if (write(loser_fd, moves_played.c_str(), moves_played.size()) < 0)
-    {
-        cerr << "Error occurred while sending moves to the Loser." << endl;
-    }
-
-    cout << "The winner is " << winner_fd << endl;
+    // // send moves played
+    // if (write(loser_fd, moves_played.c_str(), moves_played.size()) < 0)
+    // {
+    //     cerr << "Error occurred while sending moves to the Loser." << endl;
+    // }
 }
 
 int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, int &verify, char move, string &moves_played)
-{
+{ // get move from player and determine its vadility
     string s;
-    std::array<char, 1024> buffer{};
+    char buffer[BUFF_SIZE];
     int bytes;
     char save;
     char msg[BUFF_SIZE];
     char msgrasp[BUFF_SIZE] = " ";
-    // bytes = read(fd, buffer, sizeof(buffer));
-    bytes = recv(fd, buffer.data(), buffer.size(), 0);
+
+    bytes = read(fd, buffer, sizeof(buffer));
     if (bytes <= 0)
     {
         printf("Error in read() from the client.\n");
         return 0;
     }
-    // // testing begin
-    // cout << "buffer: " << buffer << endl;
-    // return 1;
-    // // testing en
 
-    string requestData(buffer.data(), bytes);
-
-    json json_data = convert_to_json(requestData);
+    // parse the json string to get the move message
+    json json_data = convert_to_json(buffer, bytes);
     const json &request_data = json_data["data"];
     string msg_received = request_data["move"];
-
-    std::cout << "msg_received: " << msg_received << std::endl;
 
     // Copy string to char array
     strncpy(msg, msg_received.c_str(), sizeof(msg) - 1);
@@ -982,12 +1107,13 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
 
     // const char *msg = msg_received.c_str();
     cout << fd << " said " << msg << endl;
-
+    string move_played(msg);
     int sr, sc, dr, dc;
     char type, c1, c2, transform;
     strcpy(msgrasp, msg);
     int i, nr = 0;
-    // get the coordinates
+
+    // translates the coordinates from char
     for (i = 0; msgrasp[i]; i++)
     {
         if (msgrasp[i] != ' ')
@@ -1018,6 +1144,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
 
     save = A[dr][dc];
     type = A[sr][sc];
+
     // visits parts to check if the cast can be executed or not. If the pieces have been moved, castling cannot happen.
     if (type == 'K' && transform != 'F')
         vizA[2] = 1;
@@ -1034,47 +1161,79 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
 
     // cout << type << " " << sr << " " << sc << " " << dr << " " << dc << " " << transform << endl;
 
-    if (move == 'a' && is_black_piece(type))
+    if (move == 'a' && is_black_piece(type)) // a is white
     {
-        strcpy(msg, "Invalid move");
-        if (write(fd, msg, strlen(msg)) < 0)
+        strcpy(msg, "Invalid move!");
+        json respond_type;
+        respond_type["message"] = msg;
+        respond_type["success"] = false;
+
+        if (send_respond(RespondType::Move, respond_type, fd) == 0)
+        {
+            cout << "Failed to send move response to " << fd << endl;
+            disconnect_player(fd);
             return 0;
+        }
+        // if (write(fd, msg, strlen(msg)) < 0)
+        //     return 0;
         return -2;
     }
-    else if (move == 'b' && is_white_piece(type))
+    else if (move == 'b' && is_white_piece(type)) // b is black
     {
         strcpy(msg, "Invalid move");
-        if (write(fd, msg, strlen(msg)) < 0)
+        json respond_type;
+        respond_type["message"] = msg;
+        respond_type["success"] = false;
+
+        if (send_respond(RespondType::Move, respond_type, fd) == 0)
+        {
+            cout << "Failed to send move response to " << fd << endl;
+            disconnect_player(fd);
             return 0;
+        }
+        // if (write(fd, msg, strlen(msg)) < 0)
+        //     return 0;
         return -2;
     }
     else if (A[sr][sc] == '-')
     {
         strcpy(msg, "Invalid move");
-        if (write(fd, msg, strlen(msg)) < 0)
+        json respond_type;
+        respond_type["message"] = msg;
+        respond_type["success"] = false;
+
+        if (send_respond(RespondType::Move, respond_type, fd) == 0)
+        {
+            cout << "Failed to send move response to " << fd << endl;
+            disconnect_player(fd);
             return 0;
+        }
+        // if (write(fd, msg, strlen(msg)) < 0)
+        //     return 0;
         return -2;
     }
 
     else
     {
-        string move_played(msg);
-        moves_played += to_string(fd) + ":" + move_played;
+
         // cout << "current moves played: " << moves_played << endl;
         if (strcmp(msg, "surrender\n") == 0)
         {
+            moves_played += to_string(fd) + ":" + move_played;
             update_elo(fd, opponent_fd);
             send_result(fd, opponent_fd, moves_played);
             return -1;
         }
         else if (move == 'a' && check_mate(A, 'K'))
         {
+            moves_played += to_string(fd) + ":" + move_played;
             update_elo(fd, opponent_fd);
             send_result(fd, opponent_fd, moves_played);
             return -1;
         }
         else if (move == 'b' && check_mate(A, 'k'))
         {
+            moves_played += to_string(fd) + ":" + move_played;
             update_elo(opponent_fd, fd);
             send_result(opponent_fd, fd, moves_played);
             return -1;
@@ -1185,13 +1344,21 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             {
                 // PrintTable(A);
                 s = convert(A);
-                json responseData = {
-                    {"type", static_cast<int>(RespondType::Move)},
-                    {"data", s}};
-                if (write(fd, responseData.dump().c_str(), responseData.dump().size()) < 0)
+                json respond_type;
+                respond_type["board"] = s;
+                respond_type["message"] = "Move executed!";
+                respond_type["success"] = true;
+
+                moves_played += to_string(fd) + ":" + move_played;
+
+                if (send_respond(RespondType::Move, respond_type, fd) == 0)
+                {
+                    cout << "Failed to send move response to " << fd << endl;
+                    disconnect_player(fd);
                     return 0;
-                if (write(opponent_fd, responseData.dump().c_str(), responseData.dump().size()) < 0)
-                    return 0;
+                }
+                // if (write(fd, s.c_str(), s.size()) < 0)
+                //     return 0;
                 cout << "Castling performed!" << endl;
                 verify = 1;
                 return s.size();
@@ -1200,8 +1367,18 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
         else if (!is_valid_move(A, type, sr, sc, dr, dc))
         {
             strcpy(msg, "Invalid move");
-            if (write(fd, msg, strlen(msg)) < 0)
+            json respond_type;
+            respond_type["message"] = msg;
+            respond_type["success"] = false;
+
+            if (send_respond(RespondType::Move, respond_type, fd) == 0)
+            {
+                cout << "Failed to send move response to " << fd << endl;
+                disconnect_player(fd);
                 return 0;
+            }
+            // if (write(fd, msg, strlen(msg)) < 0)
+            //     return 0;
             return -2;
         }
         else if (is_valid_move(A, type, sr, sc, dr, dc))
@@ -1211,8 +1388,18 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             if (move == 'a' && check(A, 'K'))
             {
                 strcpy(msg, "Invalid move! check!");
-                if (write(fd, msg, strlen(msg)) < 0)
+                json respond_type;
+                respond_type["message"] = msg;
+                respond_type["success"] = false;
+
+                if (send_respond(RespondType::Move, respond_type, fd) == 0)
+                {
+                    cout << "Failed to send move response to " << fd << endl;
+                    disconnect_player(fd);
                     return 0;
+                }
+                // if (write(fd, msg, strlen(msg)) < 0)
+                //     return 0;
 
                 A[sr][sc] = type;
                 A[dr][dc] = save;
@@ -1221,8 +1408,18 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             else if (move == 'b' && check(A, 'k'))
             {
                 strcpy(msg, "Invalid move! check!");
-                if (write(fd, msg, strlen(msg)) < 0)
+                json respond_type;
+                respond_type["message"] = msg;
+                respond_type["success"] = false;
+
+                if (send_respond(RespondType::Move, respond_type, fd) == 0)
+                {
+                    cout << "Failed to send move response to " << fd << endl;
+                    disconnect_player(fd);
                     return 0;
+                }
+                // if (write(fd, msg, strlen(msg)) < 0)
+                //     return 0;
                 A[sr][sc] = type;
                 A[dr][dc] = save;
                 return -2;
@@ -1238,12 +1435,23 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                 if (dr == 1 || dr == 8)
                 {
                     strcpy(msg, "Invalid transformation!");
-                    if (write(fd, msg, strlen(msg)) < 0)
+                    json respond_type;
+                    respond_type["message"] = msg;
+                    respond_type["success"] = false;
+
+                    if (send_respond(RespondType::Move, respond_type, fd) == 0)
+                    {
+                        cout << "Failed to send move response to " << fd << endl;
+                        disconnect_player(fd);
                         return 0;
+                    }
+                    // if (write(fd, msg, strlen(msg)) < 0)
+                    //     return 0;
                     return -2;
                 }
             }
 
+            // move is played
             if (move == 'a' && check(A, 'k'))
             {
                 strcpy(msg, "Move executed! The enemy's king is in check!");
@@ -1268,33 +1476,29 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             // cout << type << " It was moved from position " << c1 << " " << sr << " to position " << c2 << " " << dr << endl;
             // cout << "Waiting for the other player's move!" << endl;
 
-            json responseData = {
-                {"type", static_cast<int>(RespondType::Move)},
-                {"data", s}};
-
-            cout << "responseData: " << responseData.dump() << endl;
-
-            if (responseData.dump().size() && write(opponent_fd, responseData.dump().c_str(), responseData.dump().size()) < 0)
+            json respond_type;
+            respond_type["board"] = s;
+            respond_type["message"] = "Move executed!";
+            respond_type["success"] = true;
+            moves_played += to_string(fd) + ":" + move_played;
+            if (bytes && send_respond(RespondType::Move, respond_type, opponent_fd) == 0)
             {
-                printf("[server] Error in write() to the client.\n");
+                cout << "Failed to send move response to " << opponent_fd << endl;
                 disconnect_player(opponent_fd);
-
                 return 0;
             }
+            // if (bytes && write(opponent_fd, s.c_str(), bytes) < 0)
+            // {
+            //     printf("[server] Error in write() to the client.\n");
+            //     disconnect_player(opponent_fd);
 
-            if (responseData.dump().size() && write(fd, responseData.dump().c_str(), responseData.dump().size()) < 0)
+            //     return 0;
+            // }
+
+            if (strlen(msg) && send_respond(RespondType::Move, respond_type, fd) == 0)
             {
-                printf("[server] Error in write() to the client.\n");
-                disconnect_player(opponent_fd);
-
-                return 0;
-            }
-
-            if (strlen(msg) && write(fd, msg, strlen(msg)) < 0)
-            {
-                printf("[server] Error in write() to the client.\n");
+                cout << "Failed to send move response to " << fd << endl;
                 disconnect_player(fd);
-
                 return 0;
             }
 
@@ -1485,7 +1689,6 @@ void *match_making_system(void *arg)
         create_table(A);
         string s = convert(A);
         // thread for managing game play
-        std::cout << "Before playgame: " << player_a->username << std::endl;
         PlayGameThreadData *game_data = new PlayGameThreadData;
         game_data->player_a = player_a;
         game_data->player_b = player_b;
@@ -1524,27 +1727,25 @@ void *play_game(void *arg)
     (*a).round = 1;
     (*b).round = 0;
 
+    json responseMatchmakingData = {{"user1", {{"username", (*a).username}, {"elo", (*a).elo}}}, {"user2", {{"username", (*b).username}, {"elo", (*b).elo}}}, {"success", true}, {"message", "Match Found"}};
+    if (send_respond(RespondType::MatchMaking, responseMatchmakingData, a->fd) == 0)
+    {
+        cout << "Failed to send match found response to " << a->fd << endl;
+        disconnect_player(a->fd);
+        return 0;
+    }
+
+    if (send_respond(RespondType::MatchMaking, responseMatchmakingData, b->fd) == 0)
+    {
+        cout << "Failed to send match found response to " << b->fd << endl;
+        disconnect_player(b->fd);
+        return 0;
+    }
+
     int ft = 0, current_fd;
     // Working ... need to constantly check surrender message from both players
-    json responseMatchmakingData = {
-        {"type", static_cast<int>(RespondType::MatchMaking)}, {"data", {{"user1", {{"username", (*a).username}, {"elo", (*a).elo}}}, {"user2", {{"username", (*b).username}, {"elo", (*b).elo}}}}}, {"success", true}};
 
-    std::string responseStr = responseMatchmakingData.dump();
-    cout << "responseStr: " << responseStr << endl;
-    if (send((*a).fd, responseStr.c_str(), responseStr.size(), 0) == -1)
-    {
-        std::cerr << "Failed to send response to client" << std::endl;
-    }
-
-    if (send((*b).fd, responseStr.c_str(), responseStr.size(), 0) == -1)
-    {
-        std::cerr << "Failed to send response to client" << std::endl;
-    }
     string moves_played = "";
-
-    json responseData = {
-        {"type", static_cast<int>(RespondType::Move)},
-        {"data", s}};
     while (1)
     {
         if ((*a).round == 1)
@@ -1554,18 +1755,16 @@ void *play_game(void *arg)
 
             if (!ft)
             {
-                int bytes = responseData.dump().size();
-                if (bytes && send(current_fd, responseData.dump().c_str(), bytes, 0) < 0)
-                {
-                    printf("[server] Error in send() to the client.\n");
-                    disconnect_player(current_fd);
+                int bytes = s.size();
+                string msg = "game start";
+                json respond_type;
+                respond_type["board"] = s;
+                respond_type["message"] = msg;
 
-                    return 0;
-                }
-                if (bytes && send((*b).fd, responseData.dump().c_str(), bytes, 0) < 0)
+                if (bytes && send_respond(RespondType::Move, respond_type, current_fd) == 0)
                 {
-                    printf("[server] Error in send() to the client.\n");
-                    disconnect_player((*b).fd);
+                    cout << "Failed to send original board to " << current_fd << endl;
+                    disconnect_player(current_fd);
 
                     return 0;
                 }
@@ -1624,114 +1823,6 @@ void *play_game(void *arg)
     pthread_exit(result);
 }
 
-std::vector<User> readAccountsFile()
-{
-    std::vector<User> users;
-    std::ifstream accountsFile("accounts.txt");
-    if (!accountsFile)
-    {
-        std::cerr << "Failed to open accounts file" << std::endl;
-        return users;
-    }
-
-    std::string line;
-    while (std::getline(accountsFile, line))
-    {
-        std::istringstream iss(line);
-        User user;
-        if (iss >> user.username >> user.password >> user.elo)
-        {
-            users.push_back(user);
-        }
-    }
-
-    return users;
-}
-
-bool isUserValid(const std::string &username, const std::string &password)
-{
-    std::ifstream accounts(ACCOUNTS_FILE);
-    if (!accounts)
-    {
-        std::cerr << "Failed to open accounts file" << std::endl;
-        return false;
-    }
-
-    std::string line;
-    while (std::getline(accounts, line))
-    {
-        std::string storedUsername, storedPassword;
-        std::istringstream iss(line);
-        if (iss >> storedUsername >> storedPassword)
-        {
-            if (storedUsername == username && storedPassword == password)
-            {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-bool handleLoginRequest(const json &requestData, int client_fd)
-{
-    string username = requestData["username"];
-    string password = requestData["password"];
-
-    cout << username << endl;
-    cout << password << endl;
-
-    // Perform login validation/authentication logic
-    User user = findUserByUsername(username);
-    bool isCorrectInfo = (user.username == username && user.password == password);
-    int isOnline = find_player_fd(username);
-    bool isValid = isCorrectInfo && (isOnline == -1);
-
-    // Craft the response JSON
-    json response;
-    response["type"] = static_cast<int>(RequestType::Login);
-    response["success"] = isValid;
-
-    if (isValid)
-    {
-        response["data"] = {{"username", user.username},
-                            {"password", user.password},
-                            {"elo", user.elo}};
-    }
-
-    if (!isCorrectInfo)
-        response["message"] = "Invalid username or password";
-    else if (isOnline != -1)
-        response["message"] = "User already online";
-    else
-        response["message"] = "Login successful";
-
-    if (isValid)
-    {
-        Player *this_player = find_online_player(client_fd);
-        this_player->username = username;
-        this_player->logged_in = 1;
-        this_player->elo = user.elo;
-
-        cout << "Player " << username << " logged in with fd " << client_fd << endl;
-    }
-    else
-        cout << "Client " << client_fd << " failed to log in" << endl;
-
-    // Serialize the response JSON
-    string responseStr = response.dump();
-
-    // Send the response back to the client
-    if (send(client_fd, responseStr.c_str(), responseStr.size(), 0) == -1)
-    {
-        cout << "Failed to send response to client" << endl;
-        disconnect_player(client_fd);
-        return 0;
-    }
-    return 1;
-}
-
 void *client_operation(void *arg)
 {
     int client_fd = *((int *)arg);
@@ -1743,8 +1834,7 @@ void *client_operation(void *arg)
     int connected = 1;
     while (connected)
     {
-        cout << "waiting for " << client_fd << " to choose an option" << endl;
-        std::array<char, 1024> buffer{};
+        array<char, 1024> buffer{};
         ssize_t bytesRead = recv(client_fd, buffer.data(), buffer.size(), 0);
         cout << "BYTES READ " << bytesRead << endl;
         if (bytesRead <= 0)
@@ -1754,6 +1844,7 @@ void *client_operation(void *arg)
             connected = 0;
             continue;
         }
+
         // Parse the received data into JSON
         string requestData(buffer.data(), bytesRead);
         cout << "Received Request: " << requestData << endl;

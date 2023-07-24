@@ -20,10 +20,8 @@ void putout(a *var)
 }
 int main()
 {
-    string b = "BONGBONGBONGBONGBONG";
-
-    a var;
-    var.a = b;
-    putout(&var);
+    char s[5] = "hhhh";
+    string b = s;
+    cout << b << endl;
     return 0;
 }
