@@ -142,9 +142,9 @@ void ChessBoardScreen::loadPosition()
             if (!n)
                 continue;
             int x = abs(n) - 1;
-            int y = n > 0 ? 1 : 0;
+            int y = n > 0 ? 0 : 1;
             f[k].setTextureRect(sf::IntRect(size * x, size * y, size, size));
-            f[k].setPosition(size * j, size * i);
+            f[k].setPosition(size * j, size * (7 - i));
             k++;
         }
     }
@@ -248,16 +248,16 @@ void ChessBoardScreen::handleMatchMakingResponse(json response) {
         isMatchFound = true;
         std::cout << "Match Found!" << std::endl;
         std::cout << response["data"]["user1"]["username"].get<std::string>() << std::endl;
-        std::cout << "Me from Client: " << user.username << std::endl;
+        std::cout << "Me from Client: " << user.username <<  '/' << response["data"]["user1"]["username"].get<std::string>() << '/' << std::endl;
         if(user.username == response["data"]["user1"]["username"].get<std::string>())
         {
-            std::cout << "meText: " << "Me: " + response["data"]["user1"]["username"].get<std::string>() + response["data"]["user1"]["elo"].get<std::string>() << std::endl;
-            meText.setString("Me: " + response["data"]["user1"]["username"].get<std::string>()+ " " + response["data"]["user1"]["elo"].get<std::string>()); // Update "me" with the actual player name
-            opponentText.setString("Opponent: " + response["data"]["user2"]["username"].get<std::string>() + " " + response["data"]["user2"]["elo"].get<std::string>());
+            std::cout << "meText: " << "Me: " + response["data"]["user1"]["username"].get<std::string>() + std::to_string(response["data"]["user1"]["elo"].get<int>()) << std::endl;
+            meText.setString("Me: " + response["data"]["user1"]["username"].get<std::string>()+ " " + std::to_string(response["data"]["user1"]["elo"].get<int>())); // Update "me" with the actual player name
+            opponentText.setString("Opponent: " + response["data"]["user2"]["username"].get<std::string>() + " " + std::to_string(response["data"]["user2"]["elo"].get<int>()));
         }
         else {
-            opponentText.setString("Opponent: " + response["data"]["user1"]["username"].get<std::string>() + response["data"]["user1"]["elo"].get<std::string>()); // Update "me" with the actual player name
-            meText.setString("Me: " + response["data"]["user2"]["username"].get<std::string>() + response["data"]["user2"]["elo"].get<std::string>());
+            opponentText.setString("Opponent: " + response["data"]["user1"]["username"].get<std::string>() + std::to_string(response["data"]["user1"]["elo"].get<int>())); // Update "me" with the actual player name
+            meText.setString("Me: " + response["data"]["user2"]["username"].get<std::string>() + std::to_string(response["data"]["user2"]["elo"].get<int>()));
         }
     }
 }
@@ -272,6 +272,8 @@ void ChessBoardScreen::receiveGameStateResponse(json response)
     if (response["data"]["success"].get<bool>())
     {
         std::string responseString = response["data"]["board"].get<std::string>();
+        std::cout << "gamestate responseString: " << response["data"]["board"].get<std::string>() << std::endl;
+
         convertBoardResponse(board, responseString);
         std::cout << "gamestate responseString: " << responseString << std::endl;
         std::cout << "Server shouted: " << response["data"]["message"].get<std::string>() << std::endl;

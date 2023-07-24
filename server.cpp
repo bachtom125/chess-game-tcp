@@ -1083,21 +1083,24 @@ void send_result(int loser_fd, int winner_fd, string moves_played)
 int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, int &verify, char move, string &moves_played)
 { // get move from player and determine its vadility
     string s;
-    char buffer[BUFF_SIZE];
+    // char buffer[BUFF_SIZE];
+        std::array<char, 1024> buffer{};
+
     int bytes;
     char save;
     char msg[BUFF_SIZE];
     char msgrasp[BUFF_SIZE] = " ";
 
-    bytes = read(fd, buffer, sizeof(buffer));
+    bytes = recv(fd, buffer.data(), buffer.size(), 0);
+    // bytes = read(fd, buffer, sizeof(buffer));
     if (bytes <= 0)
     {
         printf("Error in read() from the client.\n");
         return 0;
     }
-
+    string requestData(buffer.data(), bytes);
     // parse the json string to get the move message
-    json json_data = convert_to_json(buffer, bytes);
+    json json_data = convert_to_json(requestData, bytes);
     const json &request_data = json_data["data"];
     string msg_received = request_data["move"];
 
@@ -1355,6 +1358,14 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                 {
                     cout << "Failed to send move response to " << fd << endl;
                     disconnect_player(fd);
+                    return 0;
+                }
+
+                
+                if (send_respond(RespondType::Move, respond_type, opponent_fd) == 0)
+                {
+                    cout << "Failed to send move response to " << opponent_fd << endl;
+                    disconnect_player(opponent_fd);
                     return 0;
                 }
                 // if (write(fd, s.c_str(), s.size()) < 0)
@@ -1760,11 +1771,20 @@ void *play_game(void *arg)
                 json respond_type;
                 respond_type["board"] = s;
                 respond_type["message"] = msg;
+                respond_type["success"] = true;
+
 
                 if (bytes && send_respond(RespondType::Move, respond_type, current_fd) == 0)
                 {
                     cout << "Failed to send original board to " << current_fd << endl;
                     disconnect_player(current_fd);
+
+                    return 0;
+                }
+                if (bytes && send_respond(RespondType::Move, respond_type, b->fd) == 0)
+                {
+                    cout << "Failed to send original board to " << b->fd << endl;
+                    disconnect_player(b->fd);
 
                     return 0;
                 }
