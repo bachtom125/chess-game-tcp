@@ -86,23 +86,13 @@ void LoginScreen::handleEvent(const sf::Event& event)
 
 
 		if (signupButton.getGlobalBounds().contains(mousePos.x, mousePos.y)) {
+
 			std::string enteredUsername = usernameText.getString();
 			std::string enteredPassword = passwordText.getString();
 
 			// Perform your login validation/authentication logic
-			bool isValidated = validateLogin(enteredUsername, enteredPassword);
-
-			if (isValidated)
-			{
-				// Login successful, transition to the main menu screen
-				isLoginSuccessful = true;
-			}
-			else
-			{
-				// Login failed, display an error message or take appropriate action
-				displayErrorMessage("Invalid username or password");
-				std::cout << "Error" << std::endl;
-			}
+			validateLogin();
+			isRequestSent = true;
 		}
 
 	}
@@ -124,15 +114,38 @@ void LoginScreen::handleEvent(const sf::Event& event)
 	}
 }
 
-bool LoginScreen::validateLogin(const std::string& username, const std::string& password)
+void LoginScreen::validateLogin()
 {
+	if (startLogin) return;
 	// Replace this with your actual login validation/authentication logic
 	// For demonstration purposes, let's assume a valid username is "admin" and password is "password"
 	json loginRequest;
 	loginRequest["username"] = usernameText.getString();
 	loginRequest["password"] = passwordText.getString();
 	tcpClient.sendRequest(RequestType::Login, loginRequest);
-	return true;
+	startLogin = true;
+	// Block and wait for server response
+
+}
+
+void LoginScreen::handleLoginResponse(json json_data) {
+	if (json_data["success"])
+	{
+		User newUser;
+		std::cout << "user: " << json_data["data"].dump() << std::endl;
+		newUser.username = json_data["data"]["username"];
+		newUser.password = json_data["data"]["password"];
+		newUser.elo = json_data["data"]["elo"];
+		std::cout << "user.username: " << newUser.username << std::endl;
+		user = newUser;
+		isLoginSuccessful = true;
+	}
+	else {
+		isLoginSuccessful = false;
+		displayErrorMessage("Wrong username or password");
+	}
+	startLogin = false;
+
 }
 
 void LoginScreen::displayErrorMessage(const std::string& message)
@@ -155,26 +168,14 @@ void LoginScreen::displayErrorMessage(const std::string& message)
 
 void LoginScreen::update()
 {
+	
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
 	{
-		std::string enteredUsername = usernameText.getString();
-		std::string enteredPassword = passwordText.getString();
-
 		// Perform your login validation/authentication logic
-		bool isValidated = validateLogin(enteredUsername, enteredPassword);
-
-		if (isValidated)
-		{
-			// Login successful, transition to the main menu screen
-			isLoginSuccessful = true;
-		}
-		else
-		{
-			// Login failed, display an error message or take appropriate action
-			displayErrorMessage("Invalid username or password");
-			std::cout << "Error" << std::endl;
-		}
+		validateLogin();
+		isRequestSent = true;
 	}
+	
 
 	// Handle other update logic for the login screen
 	// ...

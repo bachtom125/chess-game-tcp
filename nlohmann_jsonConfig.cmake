@@ -1,6 +1,6 @@
 # Variables
-set(nlohmann_json_INCLUDE_DIRS "../../json-develop/json-develop/include")
-set(nlohmann_json_LIBRARIES "../../json-develop/json-develop/include")
+set(nlohmann_json_INCLUDE_DIRS "../json-develop/include")
+set(nlohmann_json_LIBRARIES "../json-develop/include")
 
 # Targets
 add_library(nlohmann_json INTERFACE)

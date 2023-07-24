@@ -2,7 +2,9 @@
 #include "nlohmann/json.hpp"
 #include <iostream>
 
+
 using json = nlohmann::json;
+
 
 TcpClient::TcpClient(const std::string& serverAddress, unsigned short serverPort)
     : serverAddress(serverAddress), serverPort(serverPort)
@@ -11,10 +13,16 @@ TcpClient::TcpClient(const std::string& serverAddress, unsigned short serverPort
 
 bool TcpClient::connect()
 {
+    std::cout << "Connect: " << std::endl;
+
     if (socket.connect(serverAddress, serverPort) == sf::Socket::Done) {
+        std::cout << "Connect successfull: " << std::endl;
+
         return true;
     }
     else {
+        std::cout << "Connect fail: " << std::endl;
+
         return false;
     }
 }
@@ -31,13 +39,17 @@ bool TcpClient::send(const std::string& message)
 
 bool TcpClient::receive(std::string& receivedData)
 {
-    char buffer[128];
+    char buffer[1024];
     std::size_t received;
     if (socket.receive(buffer, sizeof(buffer), received) == sf::Socket::Done) {
+
+
         receivedData = std::string(buffer, received);
+        std::cout << "receieved: " << received << std::endl;
+        std::cout << "receievedData: " << receivedData << std::endl;
         return true;
     }
-    else {
+    else {     
         return false;
     }
 }
@@ -55,6 +67,8 @@ bool TcpClient::sendRequest(RequestType type, const json& requestData)
 
     sf::Packet packet;
     packet << serializedRequest;
+
+    std::cout << "Serialized request: " << requestData << std::endl;
 
     sf::Socket::Status status = socket.send(packet);
     return (status == sf::Socket::Done);

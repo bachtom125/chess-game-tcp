@@ -28,20 +28,20 @@ MainMenu::MainMenu(sf::RenderWindow& window)
     titleText.setString("Chess Game");
     titleText.setPosition(300, 100);
 
-    challengerText.setFont(font);
-    challengerText.setCharacterSize(20);
-    challengerText.setString("1. Challenger");
-    challengerText.setPosition(300, 200);
+    matchmakingText.setFont(font);
+    matchmakingText.setCharacterSize(20);
+    matchmakingText.setString("1. Matchmaking");
+    matchmakingText.setPosition(300, 200);
 
-    randomMatchText.setFont(font);
-    randomMatchText.setCharacterSize(20);
-    randomMatchText.setString("2. Random Match");
-    randomMatchText.setPosition(300, 250);
+    challengeText.setFont(font);
+    challengeText.setCharacterSize(20);
+    challengeText.setString("2. Challenge");
+    challengeText.setPosition(300, 250);
 
-    onlineUsersText.setFont(font);
-    onlineUsersText.setCharacterSize(20);
-    onlineUsersText.setString("3. Online Users");
-    onlineUsersText.setPosition(300, 300);
+    exitText.setFont(font);
+    exitText.setCharacterSize(20);
+    exitText.setString("3. Exit");
+    exitText.setPosition(300, 300);
 
     defaultTextColor = sf::Color::White;
     hoverTextColor = sf::Color::Red;
@@ -55,51 +55,51 @@ void MainMenu::handleEvent(const sf::Event& event)
         window.close();
     }
 
-    if (isMouseOver(challengerText)) {
-        challengerText.setFillColor(hoverTextColor);
+    if (isMouseOver(matchmakingText)) {
+        matchmakingText.setFillColor(hoverTextColor);
         if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
-            currentOption = Option_Challenger;
-            std::cout << "Selected option: Challenger" << std::endl;
+            currentOption = Option_Matchmaking;
+            std::cout << "Selected option: matchmakingText" << std::endl;
         }
     }
     else {
-        challengerText.setFillColor(defaultTextColor);
+        matchmakingText.setFillColor(defaultTextColor);
     }
 
-    if (isMouseOver(randomMatchText)) {
-        randomMatchText.setFillColor(hoverTextColor);
+    if (isMouseOver(challengeText)) {
+        challengeText.setFillColor(hoverTextColor);
         if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
-            currentOption = Option_RandomMatch;
-            std::cout << "Selected option: Random Match" << std::endl;
+            currentOption = Option_Challenge;
+            std::cout << "Selected option: challengeText" << std::endl;
         }
     }
     else {
-        randomMatchText.setFillColor(defaultTextColor);
+        challengeText.setFillColor(defaultTextColor);
     }
 
-    if (isMouseOver(onlineUsersText)) {
-        onlineUsersText.setFillColor(hoverTextColor);
+    if (isMouseOver(exitText)) {
+        exitText.setFillColor(hoverTextColor);
         if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
-            currentOption = Option_OnlineUsers;
-            std::cout << "Selected option: Online Users" << std::endl;
+            currentOption = Option_Exit;
+            std::cout << "Selected option: exitText" << std::endl;
         }
     }
     else {
-        onlineUsersText.setFillColor(defaultTextColor);
+        exitText.setFillColor(defaultTextColor);
     }
 
 }
 
 void MainMenu::update()
 {
-    if (currentOption == Option_Challenger) {
+    if (currentOption == Option_Matchmaking) {
         // Perform actions specific to the "Challenger" option
         activeScreen = Screen::ChessBoardScreen;
     }
-    else if (currentOption == Option_RandomMatch) {
+    else if (currentOption == Option_Challenge) {
         // Perform actions specific to the "Random Match" option
     }
-    else if (currentOption == Option_OnlineUsers) {
+    else if (currentOption == Option_Exit) {
         // Perform actions specific to the "Online Users" option
     }
 
@@ -113,9 +113,20 @@ void MainMenu::draw()
     titleText.setFillColor(defaultTextColor);
     window.draw(titleText);
 
-    window.draw(challengerText);
-    window.draw(randomMatchText);
-    window.draw(onlineUsersText);
+    window.draw(matchmakingText);
+    window.draw(challengeText);
+    window.draw(exitText);
+
+    // Display the user information
+    if (user.username != "")
+    {
+        userInfoText.setFont(font);
+        userInfoText.setCharacterSize(24);
+        userInfoText.setFillColor(defaultTextColor);
+        userInfoText.setString(user.username + " - " + std::to_string(user.elo));
+        userInfoText.setPosition(50, 50); // Adjust the position as needed
+        window.draw(userInfoText);
+    }
 
 
 }

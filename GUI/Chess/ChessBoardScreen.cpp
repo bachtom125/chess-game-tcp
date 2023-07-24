@@ -1,8 +1,9 @@
 #include <iostream>
+#include <string>
 #include "ChessBoardScreen.hpp"
 
-ChessBoardScreen::ChessBoardScreen(sf::RenderWindow& window)
-    : window(window)
+ChessBoardScreen::ChessBoardScreen(sf::RenderWindow& window, TcpClient& tcpClient)
+    : window(window), tcpClient(tcpClient)
 {
     t1.loadFromFile("./images/figures.png");
     t2.loadFromFile("./images/board.png");
@@ -22,39 +23,53 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
         window.close();
     }
 
-    // Handle events specific to the chess board screen
+    if (isMatchFound)
 
-    if (event.type == sf::Event::MouseButtonPressed)
     {
-        if (event.mouseButton.button == sf::Mouse::Left)
+
+        // Handle events specific to the chess board screen
+
+        if (event.type == sf::Event::MouseButtonPressed && !firstMouseRelease)
         {
-            sf::Vector2i pos = sf::Mouse::getPosition(window) - sf::Vector2i(offset);
-            for (int i = 0; i < 32; i++)
+            if (event.mouseButton.button == sf::Mouse::Left)
             {
-                if (f[i].getGlobalBounds().contains(pos.x, pos.y))
+                sf::Vector2i pos = sf::Mouse::getPosition(window) - sf::Vector2i(offset);
+                for (int i = 0; i < 32; i++)
                 {
-                    isMove = true;
-                    n = i;
-                    dx = pos.x - f[i].getPosition().x;
-                    dy = pos.y - f[i].getPosition().y;
-                    oldPos = f[i].getPosition();
+                    if (f[i].getGlobalBounds().contains(pos.x, pos.y))
+                    {
+                        isMove = true;
+                        n = i;
+                        dx = pos.x - f[i].getPosition().x;
+                        dy = pos.y - f[i].getPosition().y;
+                        oldPos = f[i].getPosition();
+                    }
                 }
             }
         }
-    }
 
-    if (event.type == sf::Event::MouseButtonReleased)
-    {
-        if (event.mouseButton.button == sf::Mouse::Left)
+        if (event.type == sf::Event::MouseButtonReleased)
         {
-            isMove = false;
-            sf::Vector2i pos = sf::Mouse::getPosition(window) - sf::Vector2i(offset);
-            newPos = sf::Vector2f(size * int(pos.x / size), size * int(pos.y / size));
-            str = toChessNote(oldPos) + toChessNote(newPos);
-            move(str);
-            if (oldPos != newPos)
-                position += str + " ";
-            f[n].setPosition(newPos);
+            if (event.mouseButton.button == sf::Mouse::Left && !firstMouseRelease)
+            {
+                std::cout << "Start release (possible send move) " << std::endl;
+                isMove = false;
+                sf::Vector2i pos = sf::Mouse::getPosition(window) - sf::Vector2i(offset);
+                newPos = sf::Vector2f(size * int(pos.x / size), size * int(pos.y / size));
+                str = toChessNote(oldPos) + toChessNote(newPos);
+                std::string moveStr = toChessNote(oldPos) + " " + toChessNote(newPos);
+
+                if (oldPos != newPos)
+                {
+                    position += str + " ";
+                    std::cout << "Start release (possible send move) " << std::endl;
+                    sendMoveToServer(moveStr);
+                }
+                f[n].setPosition(newPos);
+            }
+
+            firstMouseRelease = false;
+
         }
     }
 }
@@ -98,17 +113,34 @@ void ChessBoardScreen::update()
     //    position += str + " ";
     //    f[n].setPosition(newPos);
     //}
+
+    if (!isMatchFound && !startFindingMatchMaking)
+    {
+        // Send a request to the server to check for match found
+        // For example, assuming the request type is RequestType::CheckMatchFound
+        json requestData; // Populate the JSON data for the request if needed
+        if (tcpClient.sendRequest(RequestType::MatchMaking, requestData))
+        {
+            startFindingMatchMaking = true;
+        }
+
+    }
+
 }
 
 void ChessBoardScreen::draw()
 {
+    ////// draw  ///////
+    window.clear();
     window.draw(sBoard);
     for (int i = 0; i < 32; i++)
         f[i].move(offset);
     for (int i = 0; i < 32; i++)
         window.draw(f[i]);
+    window.draw(f[n]);
     for (int i = 0; i < 32; i++)
-        f[i].move(-offset);
+     f[i].move(-offset);
+
 }
 
 void ChessBoardScreen::loadPosition()
@@ -129,8 +161,8 @@ void ChessBoardScreen::loadPosition()
         }
     }
 
-    for (int i = 0; i < position.length(); i += 5)
-        move(position.substr(i, 4));
+   /* for (int i = 0; i < position.length(); i += 5)
+        move(position.substr(i, 4));*/
 }
 
 void ChessBoardScreen::move(std::string str)
@@ -150,27 +182,6 @@ void ChessBoardScreen::move(std::string str)
             f[i].setPosition(newPos);
     }
 
-    // Castling
-    if (str == "e1g1")
-    {
-        if (position.find("e1") == std::string::npos)
-            move("h1f1");
-    }
-    if (str == "e8g8")
-    {
-        if (position.find("e8") == std::string::npos)
-            move("h8f8");
-    }
-    if (str == "e1c1")
-    {
-        if (position.find("e1") == std::string::npos)
-            move("a1d1");
-    }
-    if (str == "e8c8")
-    {
-        if (position.find("e8") == std::string::npos)
-            move("a8d8");
-    }
 }
 
 std::string ChessBoardScreen::toChessNote(sf::Vector2f p)
@@ -184,6 +195,182 @@ std::string ChessBoardScreen::toChessNote(sf::Vector2f p)
 sf::Vector2f ChessBoardScreen::toCoord(char a, char b)
 {
     int x = static_cast<int>(a) - 97;
-    int y = 7 - static_cast<int>(b) + 49;
+    int y = 7 - static_cast<int>(b) + 49;   
     return sf::Vector2f(x * size, y * size);
 }
+
+bool ChessBoardScreen::sendMatchmakingRequest()
+{
+    // Prepare the matchmaking request data (example)
+    json matchmakingRequestData = {
+        {"username", "player123"} // Replace "player123" with the actual username of the player
+        // Add any other relevant data for matchmaking
+    };
+
+    // Send the matchmaking request to the server
+    if (tcpClient.sendRequest(RequestType::MatchMaking, matchmakingRequestData))
+    {
+        std::cout << "Matchmaking request sent successfully!" << std::endl;
+        return true;
+    }
+    else
+    {
+        std::cerr << "Failed to send matchmaking request to the server." << std::endl;
+        return false;
+    }
+}
+
+void ChessBoardScreen::processMatchmakingResponse(const std::string& response)
+{
+    // Process the matchmaking response from the server
+    json jsonResponse = json::parse(response);
+    // Assuming the server responds with JSON data as follows:
+    // {
+    //     "matchId": "123456",
+    //     "opponentUsername": "opponent123"
+    // }
+    std::string matchId = jsonResponse["matchId"];
+    std::string opponentUsername = jsonResponse["opponentUsername"];
+    std::cout << "Match found! Match ID: " << matchId << ", Opponent: " << opponentUsername << std::endl;
+
+    // Now you have the match information, and you can proceed with your game logic and rendering.
+    // Set the appropriate flags or update the game state to indicate that a match is found.
+    isMatchFound = true;
+    isMoveAllowed = true;
+    // Store the match details received from the server
+    matchId = matchId;
+    opponentUsername = opponentUsername;
+}
+
+std::string toLowerCase(const std::string& str) {
+    std::string result = str;
+    std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return std::tolower(c); });
+    return result;
+}
+
+bool containsSubstring(const std::string& str, const std::string& substring) {
+    return str.find(substring) != std::string::npos;
+}
+
+void ChessBoardScreen::handleMatchMakingResponse(json response) {
+    bool found = response["success"].get<bool>();
+
+    if (found)
+    {
+        isMatchFound = true;
+        std::cout << "Match Found!" << std::endl;
+    }
+}
+
+void ChessBoardScreen::receiveGameStateResponse(const std::string responseString)
+{
+    // Process the game state response from the server
+    // Update the game state, chess board, and other relevant data based on the received data
+
+    std::cout << "gamestate responseString: " << responseString << std::endl;
+    if (responseString != "Invalid move")
+
+    {
+        convertBoardResponse(board, json::parse(responseString));
+        
+    }
+    
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            std::cout << board[i][j];
+        }
+        std::cout << std::endl;
+    }
+    loadPosition();
+}
+
+void ChessBoardScreen::sendMoveToServer(const std::string& move)
+{
+    // Prepare the move data (example)
+    json moveData;
+    json moveJson = { {"move", move} };
+    moveData["data"] = moveJson;
+
+    // Send the move data to the server
+    if (tcpClient.sendRequest(RequestType::Move, moveData))
+    {
+        std::cout << "Move sent to the server: " << moveData << std::endl;
+    }
+    else
+    {
+        std::cerr << "Failed to send move to the server." << std::endl;
+    }
+}
+
+
+void ChessBoardScreen::convertBoardResponse(int a[8][8], std::string s)
+{
+    int i, j, k = 0;
+    for (i = 0; i < 8; i++)
+    {
+        for (j = 0; j < 8; j++)
+        {
+            switch (s[k])
+            {
+            case 'p':
+                a[i][j] = 6;
+                break;
+
+            case 'P':
+                a[i][j] = -6;
+                break;
+
+            case 'k':
+                a[i][j] = 5;
+                break;
+
+            case 'K':
+                a[i][j] = -5;
+                break;
+
+            case 'c':
+                a[i][j] = 2;
+                break;
+
+            case 'C':
+                a[i][j] = -2;
+                break;
+
+            case 'r':
+                a[i][j] = 1;
+                break;
+
+            case 'R':
+                a[i][j] = -1;
+                break;
+
+            case 'b':
+                a[i][j] = 3;
+                break;
+
+            case 'B':
+                a[i][j] = -3;
+                break;
+
+            case 'q':
+                a[i][j] = 4;
+                break;
+
+            case 'Q':
+                a[i][j] = -4;
+                break;
+
+            case '-':
+                a[i][j] = 0;
+                break;
+            default:
+                break;
+            }
+            std::cout << a[i][j] << ":" << s[k];
+            k++;
+        }
+        std::cout << std::endl;
+
+    }
+}
+

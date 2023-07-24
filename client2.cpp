@@ -181,12 +181,12 @@ json receive_respond(int sd) // get respond and return corresponding json object
 
 // need to add client receiving results sent by server after the game's over
 bool in_game = 0;
-void convert(int a[9][9], string s)
+void convert(int a[8][8], string s)
 {
     int i, j, k = 0;
-    for (i = 1; i <= 8; i++)
+    for (i = 0; i < 8; i++)
     {
-        for (j = 1; j <= 8; j++)
+        for (j = 0; j < 8; j++)
         {
             switch (s[k++])
             {
