@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include "TcpClient.hpp"
+#include "LoginScreen.hpp"
 
 
 using Fixed2DArray = int[8][8];
@@ -15,16 +16,15 @@ public:
     void handleEvent(const sf::Event& event);
     void update();
     void draw();
-    void receiveGameStateResponse(const std::string response);
+    void receiveGameStateResponse(json response);
     void handleMatchMakingResponse(json data);
     bool startFindingMatchMaking = false;
-
+    User user;
 
 private:
     bool isMatchFound = false;
     bool isMoveAllowed = false;
     std::string matchId;
-    std::string opponentUsername;
 
     TcpClient& tcpClient; // TcpClient member variable
 
@@ -56,6 +56,9 @@ private:
     std::string str;
     int n = 0;
     bool firstMouseRelease = true;
+    sf::Font font;
+    sf::Text meText;
+    sf::Text opponentText;
 
     void handleTextInput(sf::Text& text, const sf::Event& event);
     // Function to handle matchmaking request and response
@@ -71,7 +74,5 @@ private:
     // New function to send the move to the server and receive the game state response
     void sendMoveToServer(const std::string& move);
     void convertBoardResponse(int[8][8], std::string);
-    
-
-
+    void displayErrorMessage(const std::string& message);
 };

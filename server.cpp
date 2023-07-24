@@ -19,7 +19,7 @@
 #include <fstream> // Add this line
 #include <condition_variable>
 
-#define PORT 3000
+#define PORT 5500
 #define BUFF_SIZE 1024
 
 using namespace std;
@@ -201,7 +201,7 @@ bool handleMatchMakingRequest(const json &requestData, int client_fd)
 {
     // need to check if logged in
     Player *this_player = find_online_player(client_fd);
-    cout << "and he is " << client_fd << ':' << this_player << endl;
+    cout << "and he is " << client_fd << ':' << this_player->username << endl;
     if (!this_player)
     {
         printf("Player not online");
@@ -210,7 +210,7 @@ bool handleMatchMakingRequest(const json &requestData, int client_fd)
     }
 
     // if reaches here, then player is both logged in and online
-    printf("This player %d\n", this_player->fd);
+    cout << "This player : " << this_player->username << endl;
     match_making_players.push(this_player);
     this_player->free = 0;
     while (1)
@@ -956,10 +956,8 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
     char save;
     char msg[BUFF_SIZE];
     char msgrasp[BUFF_SIZE] = " ";
-cout << "HEY" << endl;
     // bytes = read(fd, buffer, sizeof(buffer));
-   bytes = recv(fd, buffer.data(), buffer.size(), 0);
-   
+    bytes = recv(fd, buffer.data(), buffer.size(), 0);
     if (bytes <= 0)
     {
         printf("Error in read() from the client.\n");
@@ -969,9 +967,10 @@ cout << "HEY" << endl;
     // cout << "buffer: " << buffer << endl;
     // return 1;
     // // testing en
-    cout<< buffer.data() << endl;
 
-    json json_data = convert_to_json(buffer.data());
+    string requestData(buffer.data(), bytes);
+
+    json json_data = convert_to_json(requestData);
     const json &request_data = json_data["data"];
     string msg_received = request_data["move"];
 
@@ -1273,7 +1272,9 @@ cout << "HEY" << endl;
                 {"type", static_cast<int>(RespondType::Move)},
                 {"data", s}};
 
-            if (bytes && write(opponent_fd, responseData.dump().c_str(), bytes) < 0)
+            cout << "responseData: " << responseData.dump() << endl;
+
+            if (responseData.dump().size() && write(opponent_fd, responseData.dump().c_str(), responseData.dump().size()) < 0)
             {
                 printf("[server] Error in write() to the client.\n");
                 disconnect_player(opponent_fd);
@@ -1281,7 +1282,7 @@ cout << "HEY" << endl;
                 return 0;
             }
 
-            if (bytes && write(fd, responseData.dump().c_str(), bytes) < 0)
+            if (responseData.dump().size() && write(fd, responseData.dump().c_str(), responseData.dump().size()) < 0)
             {
                 printf("[server] Error in write() to the client.\n");
                 disconnect_player(opponent_fd);
@@ -1331,7 +1332,7 @@ void print_server_state()
     vector<Player *> temp = online_players;
     cout << "Players online ";
     for (Player *i : temp)
-        cout << i->fd << ' ';
+        cout << i->fd << ' ' << i->username << " - ";
     cout << endl;
 }
 
@@ -1527,7 +1528,7 @@ void *play_game(void *arg)
     // Working ... need to constantly check surrender message from both players
     json responseMatchmakingData = {
         {"type", static_cast<int>(RespondType::MatchMaking)}, {"data", {{"user1", {{"username", (*a).username}, {"elo", (*a).elo}}}, {"user2", {{"username", (*b).username}, {"elo", (*b).elo}}}}}, {"success", true}};
-    
+
     std::string responseStr = responseMatchmakingData.dump();
     cout << "responseStr: " << responseStr << endl;
     if (send((*a).fd, responseStr.c_str(), responseStr.size(), 0) == -1)
@@ -1755,7 +1756,7 @@ void *client_operation(void *arg)
         }
         // Parse the received data into JSON
         string requestData(buffer.data(), bytesRead);
-        cout << requestData << endl;
+        cout << "Received Request: " << requestData << endl;
         // Find the position of the first opening brace '{'
         size_t bracePos = requestData.find_first_of('{');
         if (bracePos != string::npos)

@@ -13,6 +13,26 @@ ChessBoardScreen::ChessBoardScreen(sf::RenderWindow& window, TcpClient& tcpClien
         f[i].setTexture(t1);
 
     loadPosition();
+
+    // Load the font
+    if (!font.loadFromFile("fonts/inter.ttf")) {
+        // Handle font loading error
+        // Print an error message, throw an exception, or take appropriate action
+        std::cout << "Error loading font" << std::endl;
+        return;
+    }
+
+    meText.setFont(font);
+    meText.setCharacterSize(20);
+    meText.setPosition(window.getSize().x - 240, window.getSize().y - 160); // Adjust the position as needed
+    meText.setFillColor(sf::Color::White);
+
+
+    opponentText.setFont(font);
+    opponentText.setCharacterSize(20);
+    opponentText.setPosition(window.getSize().x - 240, 30 ); // Adjust the position as needed
+    opponentText.setFillColor(sf::Color::White);
+    opponentText.setString("Waiting for an opponent..."); // Update "me" with the actual player name
 }
 
 void ChessBoardScreen::handleEvent(const sf::Event& event)
@@ -23,8 +43,7 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
         window.close();
     }
 
-    if (isMatchFound)
-
+    if(isMatchFound)
     {
 
         // Handle events specific to the chess board screen
@@ -59,6 +78,8 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
                 str = toChessNote(oldPos) + toChessNote(newPos);
                 std::string moveStr = toChessNote(oldPos) + " " + toChessNote(newPos);
 
+                std::cout << "new position: " << toChessNote(newPos) << std::endl;
+
                 if (oldPos != newPos)
                 {
                     position += str + " ";
@@ -76,43 +97,7 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
 
 void ChessBoardScreen::update()
 {
-    // Update the chess board screen logic
-    // ...
-
-    // For example, you can add an option to make the computer move
-    //if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
-    //{
-    //    str = getNextMove(position);
-
-    //    oldPos = toCoord(str[0], str[1]);
-    //    newPos = toCoord(str[2], str[3]);
-
-    //    for (int i = 0; i < 32; i++)
-    //    {
-    //        if (f[i].getPosition() == oldPos)
-    //            n = i;
-    //    }
-
-    //    // Animation
-    //    for (int k = 0; k < 50; k++)
-    //    {
-    //        sf::Vector2f p = newPos - oldPos;
-    //        f[n].move(p.x / 50, p.y / 50);
-    //        window.draw(sBoard);
-    //        for (int i = 0; i < 32; i++)
-    //            f[i].move(offset);
-    //        for (int i = 0; i < 32; i++)
-    //            window.draw(f[i]);
-    //        window.draw(f[n]);
-    //        for (int i = 0; i < 32; i++)
-    //            f[i].move(-offset);
-    //        window.display();
-    //    }
-
-    //    move(str);
-    //    position += str + " ";
-    //    f[n].setPosition(newPos);
-    //}
+    meText.setString("Me: " + user.username + " " + std::to_string(user.elo)); // Update "me" with the actual player name
 
     if (!isMatchFound && !startFindingMatchMaking)
     {
@@ -140,6 +125,9 @@ void ChessBoardScreen::draw()
     window.draw(f[n]);
     for (int i = 0; i < 32; i++)
      f[i].move(-offset);
+
+    window.draw(meText);
+    window.draw(opponentText);
 
 }
 
@@ -259,20 +247,36 @@ void ChessBoardScreen::handleMatchMakingResponse(json response) {
     {
         isMatchFound = true;
         std::cout << "Match Found!" << std::endl;
+        std::cout << response["data"]["user1"]["username"].get<std::string>() << std::endl;
+        std::cout << "Me from Client: " << user.username << std::endl;
+        if(user.username == response["data"]["user1"]["username"].get<std::string>())
+        {
+            std::cout << "meText: " << "Me: " + response["data"]["user1"]["username"].get<std::string>() + response["data"]["user1"]["elo"].get<std::string>() << std::endl;
+            meText.setString("Me: " + response["data"]["user1"]["username"].get<std::string>()+ " " + response["data"]["user1"]["elo"].get<std::string>()); // Update "me" with the actual player name
+            opponentText.setString("Opponent: " + response["data"]["user2"]["username"].get<std::string>() + " " + response["data"]["user2"]["elo"].get<std::string>());
+        }
+        else {
+            opponentText.setString("Opponent: " + response["data"]["user1"]["username"].get<std::string>() + response["data"]["user1"]["elo"].get<std::string>()); // Update "me" with the actual player name
+            meText.setString("Me: " + response["data"]["user2"]["username"].get<std::string>() + response["data"]["user2"]["elo"].get<std::string>());
+        }
     }
 }
 
-void ChessBoardScreen::receiveGameStateResponse(const std::string responseString)
+void ChessBoardScreen::receiveGameStateResponse(json response)
 {
     // Process the game state response from the server
     // Update the game state, chess board, and other relevant data based on the received data
 
-    std::cout << "gamestate responseString: " << responseString << std::endl;
-    if (responseString != "Invalid move")
 
+    std::string responseString = response["data"].dump();
+    std::cout << "gamestate responseString: " << responseString << std::endl;
+    if (response["success"].get<bool>())
     {
         convertBoardResponse(board, json::parse(responseString));
         
+    }
+    else {
+        displayErrorMessage(response["message"]);
     }
     
     for (int i = 0; i < 8; i++) {
@@ -289,12 +293,11 @@ void ChessBoardScreen::sendMoveToServer(const std::string& move)
     // Prepare the move data (example)
     json moveData;
     json moveJson = { {"move", move} };
-    moveData["data"] = moveJson;
 
     // Send the move data to the server
-    if (tcpClient.sendRequest(RequestType::Move, moveData))
+    if (tcpClient.sendRequest(RequestType::Move, moveJson))
     {
-        std::cout << "Move sent to the server: " << moveData << std::endl;
+        std::cout << "Move sent to the server: " << moveJson << std::endl;
     }
     else
     {
