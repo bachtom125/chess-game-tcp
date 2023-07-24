@@ -61,11 +61,11 @@ enum class RequestType
     SomeOtherRequest,
     // Add more request types as needed
 };
-
-enum class ResponseType
+enum class RespondType
 {
     Login,
     Logout,
+    MatchMaking,
     Move, // Working ... needs implementing
     Challenge,
     GameResult, // Working ... needs implementing
@@ -373,7 +373,7 @@ void *receive_game_data(void *arg)
             json received_data = jsonData["data"];
             string message = received_data["message"];
 
-            if (responseType == static_cast<int>(ResponseType::Move))
+            if (responseType == static_cast<int>(RespondType::Move))
             {
                 cout << "server said: " << message << endl;
                 string board = "";
@@ -397,23 +397,26 @@ void *receive_game_data(void *arg)
                     fflush(stdout);
                 }
             }
-            else if (responseType == static_cast<int>(ResponseType::GameResult))
+            else if (responseType == static_cast<int>(RespondType::GameResult))
             {
                 if (message == "winner")
                 {
                     cout << "You won!!!" << endl;
                     in_game = 0;
-                    break;
                 }
                 if (message == "loser")
                 {
                     cout << "You lost!!!" << endl;
                     in_game = 0;
-                    break;
                 }
-                string moves_played = received_data["logs"];
+                string moves_played = received_data["log"];
                 cout << "Moves played" << endl;
                 cout << moves_played << endl;
+                break;
+            }
+            else if (responseType == static_cast<int>(RespondType::MatchMaking))
+            {
+                cout << message << received_data << endl;
             }
         }
     }
@@ -493,7 +496,7 @@ int main(int argc, char *argv[])
 
             received_data = receive_respond(sd);
 
-            if (received_data["type"] == ResponseType::Login)
+            if (received_data["type"] == RespondType::Login)
             {
                 cout << received_data["message"] << endl;
             }
@@ -538,7 +541,7 @@ int main(int argc, char *argv[])
             received_data = receive_respond(sd); // get player list
             if (!received_data.empty())
             {
-                if (received_data["type"] == ResponseType::OnlinePlayersList)
+                if (received_data["type"] == RespondType::OnlinePlayersList)
                 {
                     json online_players = received_data["data"];
                     cout << "Online Players: ";
