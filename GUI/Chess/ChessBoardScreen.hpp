@@ -2,8 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include "TcpClient.hpp"
-#include <thread>
-#include <atomic>
+
 
 using Fixed2DArray = int[8][8];
 
@@ -16,6 +15,10 @@ public:
     void handleEvent(const sf::Event& event);
     void update();
     void draw();
+    void receiveGameStateResponse(const std::string response);
+    void handleMatchMakingResponse(json data);
+    bool startFindingMatchMaking = false;
+
 
 private:
     bool isMatchFound = false;
@@ -33,14 +36,16 @@ private:
     sf::RenderWindow& window;
     sf::Sprite f[32]; // figures
     std::string position = "";
-    int board[8][8] = { -1,-2,-3,-4,-5,-3,-2,-1,
-                       -6,-6,-6,-6,-6,-6,-6,-6,
-                        0, 0, 0, 0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0, 0, 0, 0,
-                        6, 6, 6, 6, 6, 6, 6, 6,
-                        1, 2, 3, 4, 5, 3, 2, 1 };
+    int board[8][8] = {
+    {-1, -2, -3, -4, -5, -3, -2, -1},
+    {-6, -6, -6, -6, -6, -6, -6, -6},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {6, 6, 6, 6, 6, 6, 6, 6},
+    {1, 2, 3, 4, 5, 3, 2, 1}
+    };
     int size = 56;
     sf::Vector2f offset{ 28, 28 };
     sf::Texture t1, t2;
@@ -58,16 +63,15 @@ private:
     void processMatchmakingResponse(const std::string& response);
 
     // Add a flag to indicate if the server communication thread should continue running
-    std::atomic<bool> keepListening;
 
-    // Add a new thread for server communication
-    std::thread serverThread;
+    // Add a new thread for server communiction
 
     // New functions to handle receiving and processing game state response
-    void receiveGameStateResponse(const std::string& response);
-    void listenToServer();
 
     // New function to send the move to the server and receive the game state response
     void sendMoveToServer(const std::string& move);
-    Fixed2DArray& convertBoardResponse(std::string);
+    void convertBoardResponse(int[8][8], std::string);
+    
+
+
 };

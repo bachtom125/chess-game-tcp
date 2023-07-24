@@ -20,10 +20,13 @@ enum class RequestType
 
 enum class RespondType
 {
-    LogoutSuccess,
-    MoveVerdict,       // Working ... needs implementing
-    GameResult,        // Working ... needs implementing
-    OnlinePlayersList, // Working ... needs implementing
+    Login,
+    Logout,
+    MatchMaking,
+    Move, // Working ... needs implementing
+    Challenge,
+    GameResult, // Working ... needs implementing
+    OnlinePlayersList,
 };
 
 class TcpClient

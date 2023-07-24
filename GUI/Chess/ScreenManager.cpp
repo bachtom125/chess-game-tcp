@@ -9,7 +9,7 @@ ScreenManager::ScreenManager(sf::RenderWindow& window, TcpClient& tcpClient)
     chessBoardScreen(window, tcpClient),
     currentScreen(Screen::Login)
 {
-    
+    startListeningToServerResponses();
 }
 
 void ScreenManager::run()
@@ -96,4 +96,52 @@ void ScreenManager::draw()
         window.display();
     }
 
+}
+
+void ScreenManager::handleServerResponses()
+{
+    while (keepListening)
+    {
+        std::string receivedData;
+        if (tcpClient.receive(receivedData))
+        {
+            std::cout << "receivedData thread: " << receivedData << std::endl;
+
+            // Parse the received data and handle based on the response type
+            json response = json::parse(receivedData);
+            RespondType responseType = response["type"];
+
+            if (responseType == RespondType::Move)
+            {
+                // Process the move response from the server
+                chessBoardScreen.receiveGameStateResponse(response["data"].dump());
+            }
+            else if (responseType == RespondType::MatchMaking)
+            {
+                
+                chessBoardScreen.handleMatchMakingResponse(response);
+                // Handle other response types if needed
+            }
+            else if (responseType == RespondType::Login) {
+                loginScreen.handleLoginResponse(response);
+            }
+         }
+    }
+}
+
+void ScreenManager::startListeningToServerResponses()
+{
+    // Start the server response thread to handle incoming responses
+    keepListening = true;
+    serverResponseThread = std::thread(&ScreenManager::handleServerResponses, this);
+}
+
+void ScreenManager::stopListeningToServerResponses()
+{
+    // Stop the server response thread
+    keepListening = false;
+    if (serverResponseThread.joinable())
+    {
+        serverResponseThread.join();
+    }
 }

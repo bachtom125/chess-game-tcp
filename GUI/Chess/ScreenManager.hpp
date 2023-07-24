@@ -5,6 +5,8 @@
 #include "MainMenu.hpp"
 #include "TcpClient.hpp"
 #include "ChessBoardScreen.hpp"
+#include <thread>
+#include <atomic>
 
 
 enum class Screen
@@ -27,6 +29,8 @@ private:
     void handleEvents();
     void update();
     void draw();
+    std::atomic<bool> keepListening;
+
     User user;
     sf::RenderWindow& window;
     TcpClient& tcpClient;
@@ -34,4 +38,10 @@ private:
     MainMenu mainMenu;
     ChessBoardScreen chessBoardScreen;
     Screen currentScreen;
+    std::thread serverResponseThread;
+
+    void handleServerResponses();
+
+    void startListeningToServerResponses();
+    void stopListeningToServerResponses();
 };

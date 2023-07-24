@@ -68,6 +68,8 @@ bool TcpClient::sendRequest(RequestType type, const json& requestData)
     sf::Packet packet;
     packet << serializedRequest;
 
+    std::cout << "Serialized request: " << requestData << std::endl;
+
     sf::Socket::Status status = socket.send(packet);
     return (status == sf::Socket::Done);
 }

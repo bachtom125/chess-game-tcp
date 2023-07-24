@@ -116,32 +116,20 @@ void LoginScreen::handleEvent(const sf::Event& event)
 
 void LoginScreen::validateLogin()
 {
+	if (startLogin) return;
 	// Replace this with your actual login validation/authentication logic
 	// For demonstration purposes, let's assume a valid username is "admin" and password is "password"
 	json loginRequest;
 	loginRequest["username"] = usernameText.getString();
 	loginRequest["password"] = passwordText.getString();
 	tcpClient.sendRequest(RequestType::Login, loginRequest);
+	startLogin = true;
 	// Block and wait for server response
-	std::string receivedData;
-	bool success = tcpClient.receive(receivedData);
-	if (!success) return;
 
-	size_t bracePos = receivedData.find_first_of('{');
+}
 
-	// Extract the substring from the brace position until the end of the string
-	std::string jsonSubstring = receivedData.substr(bracePos);
-
-	std::cout << "receievedDataSubStr: " << receivedData << std::endl;
-	// Parse the extracted JSON substring
-	json json_data = json::parse(jsonSubstring);
-	std::cout << "parse success: " << json_data["type"] << std::endl;
-	std::cout << "serverResponse: " << std::endl;
-		
-	std::cout << "serverResponse: " << json_data.dump() << std::endl;
-
-	if (json_data["type"] != RequestType::Login) return;
-	if (json_data["success"]) 
+void LoginScreen::handleLoginResponse(json json_data) {
+	if (json_data["success"])
 	{
 		User newUser;
 		std::cout << "user: " << json_data["data"].dump() << std::endl;
@@ -151,12 +139,12 @@ void LoginScreen::validateLogin()
 		std::cout << "user.username: " << newUser.username << std::endl;
 		user = newUser;
 		isLoginSuccessful = true;
-
 	}
-	else{
+	else {
 		isLoginSuccessful = false;
 		displayErrorMessage("Wrong username or password");
 	}
+	startLogin = false;
 
 }
 

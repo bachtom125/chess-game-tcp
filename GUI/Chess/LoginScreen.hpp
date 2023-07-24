@@ -19,6 +19,8 @@ public:
     void handleEvent(const sf::Event& event);
     void update();
     void draw();
+    void handleLoginResponse(json data);
+    bool startLogin = false;
 
 private:
     sf::RenderWindow& window;
