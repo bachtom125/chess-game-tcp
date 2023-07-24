@@ -343,7 +343,6 @@ bool handleLoginRequest(const json &requestData, int client_fd)
 
     // Craft the response JSON
     json response;
-    response["type"] = static_cast<int>(RequestType::Login);
     response["success"] = isValid;
 
     if (!isCorrectInfo)
@@ -361,21 +360,29 @@ bool handleLoginRequest(const json &requestData, int client_fd)
         this_player->elo = user.elo;
 
         cout << "Player " << username << " logged in with fd " << client_fd << endl;
+
+        response["username"] = user.username;
+        response["password"] = user.password;
+        response["elo"] = user.elo;
     }
     else
         cout << "Client " << client_fd << " failed to log in" << endl;
 
-    // Serialize the response JSON
-    string responseStr = response.dump();
-
     // Send the response back to the client
-    if (send(client_fd, responseStr.c_str(), responseStr.size(), 0) == -1)
+    if (send_respond(RespondType::Login, response, client_fd) == 0)
     {
-        cout << "Failed to send response to client" << endl;
+        cout << "Failed to send result to " << client_fd << endl;
         disconnect_player(client_fd);
         return 0;
     }
     return 1;
+
+    // if (send(client_fd, responseStr.c_str(), responseStr.size(), 0) == -1)
+    // {
+    //     cout << "Failed to send response to client" << endl;
+    //     disconnect_player(client_fd);
+    //     return 0;
+    // }
 }
 
 void remove_player_from_matchmaking()
