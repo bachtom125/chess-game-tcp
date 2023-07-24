@@ -38,10 +38,11 @@ enum class RequestType
     // Add more request types as needed
 };
 
-enum class ResponseType
+enum class RespondType
 {
     Login,
     Logout,
+    MatchMaking,
     Move, // Working ... needs implementing
     Challenge,
     GameResult, // Working ... needs implementing
@@ -225,7 +226,7 @@ bool send_request(RequestType type, const json &request_data, int sd)
     }
     return 1;
 }
-bool send_response(ResponseType type, const json &respond_data, int sd)
+bool send_respond(RespondType type, const json &respond_data, int sd)
 {
     // Create the respond JSON
     cout << "Respond Sent: " << respond_data << endl;
@@ -317,7 +318,7 @@ bool handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
     }
     cout << "GOT HERE THO" << endl;
 
-    if (send_response(ResponseType::OnlinePlayersList, respond_type, client_fd) == 0)
+    if (send_respond(RespondType::OnlinePlayersList, respond_type, client_fd) == 0)
     {
         cout << "Failed to send online players list to " << client_fd << endl;
         disconnect_player(client_fd);
@@ -1034,7 +1035,7 @@ void send_result(int loser_fd, int winner_fd, string moves_played)
     json respond_type;
     respond_type["message"] = msg;
     respond_type["log"] = moves_played;
-    if (send_response(ResponseType::GameResult, respond_type, winner_fd) == 0)
+    if (send_respond(RespondType::GameResult, respond_type, winner_fd) == 0)
     {
         cout << "Failed to send result to " << winner_fd << endl;
         disconnect_player(winner_fd);
@@ -1053,7 +1054,7 @@ void send_result(int loser_fd, int winner_fd, string moves_played)
 
     strcpy(msg, "loser");
     respond_type["message"] = msg;
-    if (send_response(ResponseType::GameResult, respond_type, loser_fd) == 0)
+    if (send_respond(RespondType::GameResult, respond_type, loser_fd) == 0)
     {
         cout << "Failed to send result to " << loser_fd << endl;
         disconnect_player(loser_fd);
@@ -1099,7 +1100,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
 
     // const char *msg = msg_received.c_str();
     cout << fd << " said " << msg << endl;
-
+    string move_played(msg);
     int sr, sc, dr, dc;
     char type, c1, c2, transform;
     strcpy(msgrasp, msg);
@@ -1160,7 +1161,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
         respond_type["message"] = msg;
         respond_type["success"] = false;
 
-        if (send_response(ResponseType::Move, respond_type, fd) == 0)
+        if (send_respond(RespondType::Move, respond_type, fd) == 0)
         {
             cout << "Failed to send move response to " << fd << endl;
             disconnect_player(fd);
@@ -1177,7 +1178,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
         respond_type["message"] = msg;
         respond_type["success"] = false;
 
-        if (send_response(ResponseType::Move, respond_type, fd) == 0)
+        if (send_respond(RespondType::Move, respond_type, fd) == 0)
         {
             cout << "Failed to send move response to " << fd << endl;
             disconnect_player(fd);
@@ -1194,7 +1195,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
         respond_type["message"] = msg;
         respond_type["success"] = false;
 
-        if (send_response(ResponseType::Move, respond_type, fd) == 0)
+        if (send_respond(RespondType::Move, respond_type, fd) == 0)
         {
             cout << "Failed to send move response to " << fd << endl;
             disconnect_player(fd);
@@ -1207,23 +1208,25 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
 
     else
     {
-        string move_played(msg);
-        moves_played += to_string(fd) + ":" + move_played;
+
         // cout << "current moves played: " << moves_played << endl;
         if (strcmp(msg, "surrender\n") == 0)
         {
+            moves_played += to_string(fd) + ":" + move_played;
             update_elo(fd, opponent_fd);
             send_result(fd, opponent_fd, moves_played);
             return -1;
         }
         else if (move == 'a' && check_mate(A, 'K'))
         {
+            moves_played += to_string(fd) + ":" + move_played;
             update_elo(fd, opponent_fd);
             send_result(fd, opponent_fd, moves_played);
             return -1;
         }
         else if (move == 'b' && check_mate(A, 'k'))
         {
+            moves_played += to_string(fd) + ":" + move_played;
             update_elo(opponent_fd, fd);
             send_result(opponent_fd, fd, moves_played);
             return -1;
@@ -1339,7 +1342,9 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                 respond_type["message"] = "Move executed!";
                 respond_type["success"] = true;
 
-                if (send_response(ResponseType::Move, respond_type, fd) == 0)
+                moves_played += to_string(fd) + ":" + move_played;
+
+                if (send_respond(RespondType::Move, respond_type, fd) == 0)
                 {
                     cout << "Failed to send move response to " << fd << endl;
                     disconnect_player(fd);
@@ -1359,7 +1364,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             respond_type["message"] = msg;
             respond_type["success"] = false;
 
-            if (send_response(ResponseType::Move, respond_type, fd) == 0)
+            if (send_respond(RespondType::Move, respond_type, fd) == 0)
             {
                 cout << "Failed to send move response to " << fd << endl;
                 disconnect_player(fd);
@@ -1380,7 +1385,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                 respond_type["message"] = msg;
                 respond_type["success"] = false;
 
-                if (send_response(ResponseType::Move, respond_type, fd) == 0)
+                if (send_respond(RespondType::Move, respond_type, fd) == 0)
                 {
                     cout << "Failed to send move response to " << fd << endl;
                     disconnect_player(fd);
@@ -1400,7 +1405,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                 respond_type["message"] = msg;
                 respond_type["success"] = false;
 
-                if (send_response(ResponseType::Move, respond_type, fd) == 0)
+                if (send_respond(RespondType::Move, respond_type, fd) == 0)
                 {
                     cout << "Failed to send move response to " << fd << endl;
                     disconnect_player(fd);
@@ -1427,7 +1432,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                     respond_type["message"] = msg;
                     respond_type["success"] = false;
 
-                    if (send_response(ResponseType::Move, respond_type, fd) == 0)
+                    if (send_respond(RespondType::Move, respond_type, fd) == 0)
                     {
                         cout << "Failed to send move response to " << fd << endl;
                         disconnect_player(fd);
@@ -1468,8 +1473,8 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             respond_type["board"] = s;
             respond_type["message"] = "Move executed!";
             respond_type["success"] = true;
-
-            if (bytes && send_response(ResponseType::Move, respond_type, opponent_fd) == 0)
+            moves_played += to_string(fd) + ":" + move_played;
+            if (bytes && send_respond(RespondType::Move, respond_type, opponent_fd) == 0)
             {
                 cout << "Failed to send move response to " << opponent_fd << endl;
                 disconnect_player(opponent_fd);
@@ -1483,7 +1488,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             //     return 0;
             // }
 
-            if (strlen(msg) && send_response(ResponseType::Move, respond_type, fd) == 0)
+            if (strlen(msg) && send_respond(RespondType::Move, respond_type, fd) == 0)
             {
                 cout << "Failed to send move response to " << fd << endl;
                 disconnect_player(fd);
@@ -1715,6 +1720,21 @@ void *play_game(void *arg)
     (*a).round = 1;
     (*b).round = 0;
 
+    json responseMatchmakingData = {{"user1", {{"username", (*a).username}, {"elo", (*a).elo}}}, {"user2", {{"username", (*b).username}, {"elo", (*b).elo}}}, {"success", true}, {"message", "Match Found"}};
+    if (send_respond(RespondType::MatchMaking, responseMatchmakingData, a->fd) == 0)
+    {
+        cout << "Failed to send match found response to " << a->fd << endl;
+        disconnect_player(a->fd);
+        return 0;
+    }
+
+    if (send_respond(RespondType::MatchMaking, responseMatchmakingData, b->fd) == 0)
+    {
+        cout << "Failed to send match found response to " << b->fd << endl;
+        disconnect_player(b->fd);
+        return 0;
+    }
+
     int ft = 0, current_fd;
     // Working ... need to constantly check surrender message from both players
 
@@ -1725,16 +1745,7 @@ void *play_game(void *arg)
         {
             current_fd = (*a).fd;
             int verify = 0;
-            // strcpy(msg, "Invalid move");
-            //         json respond_type;
-            //         respond_type["message"] = msg;
 
-            //         if (send_response(ResponseType::Move, respond_type, fd) == 0)
-            //         {
-            //             cout << "Failed to send move response to " << fd << endl;
-            //             disconnect_player(fd);
-            //             return 0;
-            //         }
             if (!ft)
             {
                 int bytes = s.size();
@@ -1743,7 +1754,7 @@ void *play_game(void *arg)
                 respond_type["board"] = s;
                 respond_type["message"] = msg;
 
-                if (bytes && send_response(ResponseType::Move, respond_type, current_fd) == 0)
+                if (bytes && send_respond(RespondType::Move, respond_type, current_fd) == 0)
                 {
                     cout << "Failed to send original board to " << current_fd << endl;
                     disconnect_player(current_fd);
