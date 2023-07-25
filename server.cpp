@@ -93,6 +93,7 @@ struct PlayGameThreadData
 void *client_operation(void *);
 void *play_game(void *);
 void *match_making_system(void *);
+json convert_to_json(string, int);
 
 bool disconnect_player(int);
 
@@ -311,10 +312,55 @@ bool handleChallengeRequest(const json &requestData, int client_fd)
     if (send_request(RequestType::Challenge, respond_type, opponent_fd) == 0)
     {
         cout << "Failed to send out challenge to " << opponent_fd << endl;
-        disconnect_player(client_fd);
+        disconnect_player(opponent_fd);
         return 0;
     }
-    // make a game with the recieved board
+
+    // receive respond from the challenged player
+    array<char, 1024> buffer{};
+    int bytes = recv(opponent_fd, buffer.data(), buffer.size(), 0);
+    if (bytes <= 0)
+    {
+        printf("Error in read() from the client.\n");
+        return 0;
+    }
+    string respondData(buffer.data(), bytes);
+    json json_data = convert_to_json(respondData, bytes);
+    const json &request_data = json_data["data"];
+    string challenge_respond = request_data["message"];
+
+    if (challenge_respond == "accept")
+    {
+        Player *player_a = find_online_player(client_fd);
+        Player *player_b = find_online_player(opponent_fd);
+
+        // thread for managing game play
+        PlayGameThreadData *game_data = new PlayGameThreadData;
+        game_data->player_a = player_a;
+        game_data->player_b = player_b;
+        game_data->initial_board = board;
+
+        pthread_t tid;
+        int thread_check = pthread_create(&tid, NULL, &play_game, game_data);
+        if (thread_check != 0)
+        {
+            cerr << "Failed to create thread for new game" << endl;
+            return 0;
+        }
+    }
+    else if (challenge_respond == "reject")
+    {
+        json respond_type;
+        respond_type["message"] = opponent_username + " rejected your challenge!";
+        respond_type["success"] = false;
+
+        if (send_request(RequestType::Challenge, respond_type, client_fd) == 0)
+        {
+            cout << "Failed to send out challenge respond to " << client_fd << endl;
+            disconnect_player(client_fd);
+            return 0;
+        }
+    }
     return 1;
 }
 
@@ -1075,7 +1121,7 @@ void update_elo(int loser_fd, int winner_fd)
 
     Player *loser = find_online_player(loser_fd);
     User loser_user = findUserByUsername(loser->username);
-    int amount = abs(winner->elo - loser->elo) / 2;
+    int amount = 20;
     winner_user.elo += amount;
     winner->elo += amount;
 
@@ -1102,6 +1148,7 @@ void send_result(int loser_fd, int winner_fd, string moves_played)
     respond_type["message"] = msg;
     respond_type["log"] = moves_played;
     respond_type["matchId"] = generate_uid();
+    cout << "ID: " << respond_type["matchId"] << endl;
     if (send_respond(RespondType::GameResult, respond_type, winner_fd) == 0)
     {
         cout << "Failed to send result to " << winner_fd << endl;
@@ -1751,6 +1798,7 @@ int main()
 }
 
 // Thread function for the matchmaking system
+
 void *match_making_system(void *arg)
 {
     while (true)
