@@ -1137,34 +1137,28 @@ void update_elo(int loser_fd, int winner_fd)
     }
     writeAccountsFile(users);
 }
-
 void send_result(int loser_fd, int winner_fd, string moves_played)
 {
+    Player *winner = find_online_player(winner_fd);
+    Player *loser = find_online_player(loser_fd);
+
     char msg[BUFF_SIZE];
     strcpy(msg, "winner");
     cout << "ALL MOVES " << moves_played << endl;
 
     json respond_type;
+    respond_type = {{"winner", {{"username", (*winner).username}, {"elo", (*winner).elo}}}, {"loser", {{"username", (*loser).username}, {"elo", (*loser).elo}}}};
+
     respond_type["message"] = msg;
     respond_type["log"] = moves_played;
     respond_type["matchId"] = generate_uid();
-    cout << "ID: " << respond_type["matchId"] << endl;
+
     if (send_respond(RespondType::GameResult, respond_type, winner_fd) == 0)
     {
         cout << "Failed to send result to " << winner_fd << endl;
         disconnect_player(winner_fd);
         return;
     }
-    // if (write(winner_fd, msg, BUFF_SIZE) < 0)
-    // {
-    //     cerr << "Error occurred while sending message to the Winner." << endl;
-    // }
-
-    // send moves played
-    // if (write(winner_fd, moves_played.c_str(), moves_played.size()) < 0)
-    // {
-    //     cerr << "Error occurred while sending moves to the Winner." << endl;
-    // }
 
     strcpy(msg, "loser");
     respond_type["message"] = msg;
@@ -1174,17 +1168,6 @@ void send_result(int loser_fd, int winner_fd, string moves_played)
         disconnect_player(loser_fd);
         return;
     }
-    // send match result
-    // if (write(loser_fd, msg, BUFF_SIZE) < 0)
-    // {
-    //     cerr << "Error occurred while sending message to the Loser" << endl;
-    // }
-
-    // // send moves played
-    // if (write(loser_fd, moves_played.c_str(), moves_played.size()) < 0)
-    // {
-    //     cerr << "Error occurred while sending moves to the Loser." << endl;
-    // }
 }
 
 int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opponent_fd, int &verify, char move, string &moves_played)
@@ -1334,20 +1317,6 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opp
             moves_played += this_player.username + ":" + move_played;
             update_elo(fd, opponent_fd);
             send_result(fd, opponent_fd, moves_played);
-            return -1;
-        }
-        else if (move == 'a' && check_mate(A, 'K'))
-        {
-            moves_played += this_player.username + ":" + move_played;
-            update_elo(fd, opponent_fd);
-            send_result(fd, opponent_fd, moves_played);
-            return -1;
-        }
-        else if (move == 'b' && check_mate(A, 'k'))
-        {
-            moves_played += this_player.username + ":" + move_played;
-            update_elo(opponent_fd, fd);
-            send_result(opponent_fd, fd, moves_played);
             return -1;
         }
 
@@ -1507,6 +1476,16 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opp
         {
             A[sr][sc] = '-';
             A[dr][dc] = type;
+
+            if ((move == 'a' && check_mate(A, 'k')) || (move == 'b' && check_mate(A, 'K')))
+            {
+                cout << "Somebody won!" << endl;
+                moves_played += this_player.username + ":" + move_played;
+                update_elo(opponent_fd, fd);
+                send_result(opponent_fd, fd, moves_played);
+                return -1;
+            }
+
             if (move == 'a' && check(A, 'K'))
             {
                 strcpy(msg, "Invalid move! check!");
