@@ -18,6 +18,9 @@
 #include <nlohmann/json.hpp>
 #include <fstream> // Add this line
 #include <condition_variable>
+#include <chrono>
+#include <sstream>
+#include <random>
 
 #define PORT 5500
 #define BUFF_SIZE 1024
@@ -95,6 +98,24 @@ bool disconnect_player(int);
 
 constexpr const char *ACCOUNTS_FILE = "accounts.txt";
 
+string generate_uid()
+{
+    // Get the current time as a timestamp
+    auto now = chrono::system_clock::now();
+    auto timestamp = chrono::duration_cast<chrono::milliseconds>(now.time_since_epoch()).count();
+
+    // Generate a random number for additional uniqueness
+    random_device rd;
+    mt19937 mt(rd());
+    uniform_int_distribution<unsigned long long> dist(0, numeric_limits<unsigned long long>::max());
+    unsigned long long random_num = dist(mt);
+
+    // Combine the timestamp and random number to create the UID
+    stringstream ss;
+    ss << hex << timestamp << random_num;
+    return ss.str();
+}
+
 Player *find_online_player(int client_fd)
 {
     for (Player *player : online_players)
@@ -147,11 +168,11 @@ bool writeAccountsFile(vector<User> users)
         // Close the file
         accountsFile.close();
 
-        std::cout << "Data written to the file successfully." << std::endl;
+        cout << "Data written to the file successfully." << endl;
     }
     else
     {
-        std::cerr << "Error opening the file." << std::endl;
+        cerr << "Error opening the file." << endl;
         return 0;
     }
     return 1;
@@ -1080,6 +1101,7 @@ void send_result(int loser_fd, int winner_fd, string moves_played)
     json respond_type;
     respond_type["message"] = msg;
     respond_type["log"] = moves_played;
+    respond_type["matchId"] = generate_uid();
     if (send_respond(RespondType::GameResult, respond_type, winner_fd) == 0)
     {
         cout << "Failed to send result to " << winner_fd << endl;
@@ -1118,12 +1140,12 @@ void send_result(int loser_fd, int winner_fd, string moves_played)
     // }
 }
 
-int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, int &verify, char move, string &moves_played)
+int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opponent_fd, int &verify, char move, string &moves_played)
 { // get move from player and determine its vadility
     string s;
     // char buffer[BUFF_SIZE];
-    std::array<char, 1024> buffer{};
-
+    array<char, 1024> buffer{};
+    int fd = this_player.fd;
     int bytes;
     char save;
     char msg[BUFF_SIZE];
@@ -1262,21 +1284,21 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
         // cout << "current moves played: " << moves_played << endl;
         if (strcmp(msg, "surrender\n") == 0)
         {
-            moves_played += to_string(fd) + ":" + move_played;
+            moves_played += this_player.username + ":" + move_played;
             update_elo(fd, opponent_fd);
             send_result(fd, opponent_fd, moves_played);
             return -1;
         }
         else if (move == 'a' && check_mate(A, 'K'))
         {
-            moves_played += to_string(fd) + ":" + move_played;
+            moves_played += this_player.username + ":" + move_played;
             update_elo(fd, opponent_fd);
             send_result(fd, opponent_fd, moves_played);
             return -1;
         }
         else if (move == 'b' && check_mate(A, 'k'))
         {
-            moves_played += to_string(fd) + ":" + move_played;
+            moves_played += this_player.username + ":" + move_played;
             update_elo(opponent_fd, fd);
             send_result(opponent_fd, fd, moves_played);
             return -1;
@@ -1393,7 +1415,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                 respond_type["success"] = true;
                 respond_type["myTurn"] = false;
 
-                moves_played += to_string(fd) + ":" + move_played;
+                moves_played += this_player.username + ":" + move_played;
 
                 if (send_respond(RespondType::Move, respond_type, fd) == 0)
                 {
@@ -1538,7 +1560,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             respond_type["success"] = true;
             respond_type["myTurn"] = false;
 
-            moves_played += to_string(fd) + ":" + move_played;
+            moves_played += this_player.username + ":" + move_played;
 
             // if (bytes && write(opponent_fd, s.c_str(), bytes) < 0)
             // {
@@ -1843,7 +1865,7 @@ void *play_game(void *arg)
                 }
                 ft = 1;
             }
-            int get_move_result = get_move(A, vizA, vizB, current_fd, (*b).fd, verify, 'a', moves_played);
+            int get_move_result = get_move(A, vizA, vizB, *a, (*b).fd, verify, 'a', moves_played);
             if (get_move_result == -1)
             {
                 break;
@@ -1867,7 +1889,7 @@ void *play_game(void *arg)
         {
             current_fd = (*b).fd;
             int verify = 0;
-            int get_move_result = get_move(A, vizA, vizB, current_fd, (*a).fd, verify, 'b', moves_played);
+            int get_move_result = get_move(A, vizA, vizB, *b, (*a).fd, verify, 'b', moves_played);
             if (get_move_result == -1)
             {
                 break;
