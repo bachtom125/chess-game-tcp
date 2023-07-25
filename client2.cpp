@@ -366,11 +366,12 @@ void *receive_game_data(void *arg)
 
             // Parse the extracted JSON substring
             json jsonData = json::parse(jsonSubstring);
-            cout << "server said: " << jsonData << endl;
+            // cout << "server said: " << jsonData << endl;
 
             // Determine the type of request and dispatch to the appropriate handler
             int responseType = jsonData["type"];
             json received_data = jsonData["data"];
+
             string message = received_data["message"];
 
             if (responseType == static_cast<int>(RespondType::Move))
@@ -390,8 +391,8 @@ void *receive_game_data(void *arg)
                     board.resize(100);
                     convert(a, board.c_str());
                     cout << "Received new board" << endl;
-                    print_board(a);
-                    cout << endl;
+                    // print_board(a);
+                    // cout << endl;
 
                     printf("[client]Enter your desired move: ");
                     fflush(stdout);

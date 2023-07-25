@@ -210,7 +210,7 @@ int find_player_fd(const string username)
 bool send_request(RequestType type, const json &request_data, int sd)
 {
     // Create the request JSON
-    cout << "Request Sent: " << request_data << endl;
+    cout << "Request Sent to " << sd << " :" << request_data << endl;
     json request;
     request["type"] = static_cast<int>(type);
     request["data"] = request_data;
@@ -229,7 +229,7 @@ bool send_request(RequestType type, const json &request_data, int sd)
 bool send_respond(RespondType type, const json &respond_data, int sd)
 {
     // Create the respond JSON
-    cout << "Respond Sent: " << respond_data << endl;
+    cout << "Respond Sent to " << sd << " :" << respond_data << endl;
     json respond;
     respond["type"] = static_cast<int>(type);
     respond["data"] = respond_data;
@@ -316,7 +316,6 @@ bool handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
         playerJson["free"] = player->free;
         respond_type.push_back(playerJson);
     }
-    cout << "GOT HERE THO" << endl;
 
     if (send_respond(RespondType::OnlinePlayersList, respond_type, client_fd) == 0)
     {
@@ -932,79 +931,118 @@ void copy(char B[9][9], char A[9][9])
             B[i][j] = A[i][j];
 }
 
+// int check_mate(char A[9][9], char type)
+// {
+//     const int dir[8] = {0};
+//     char B[9][9], C[9][9];
+//     copy(B, A);
+//     copy(C, A);
+//     int i, j, dr, dc;
+//     find_my_king(A, type, dr, dc);
+//     if (is_black_piece(type))
+//     {
+//         if (C[dr - 1][dc] == '-')
+//             A[dr - 1][dc] = 'K';
+//         if (C[dr + 1][dc] == '-')
+//             A[dr + 1][dc] = 'K';
+//         if (C[dr - 1][dc - 1] == '-')
+//             A[dr - 1][dc - 1] = 'K';
+//         if (C[dr - 1][dc + 1] == '-')
+//             A[dr - 1][dc + 1] = 'K';
+//         if (C[dr + 1][dc + 1] == '-')
+//             A[dr + 1][dc + 1] = 'K';
+//         if (C[dr + 1][dc - 1] == '-')
+//             A[dr + 1][dc - 1] = 'K';
+//         if (C[dr][dc - 1] == '-')
+//             A[dr][dc - 1] = 'K';
+//         if (C[dr][dc + 1] == '-')
+//             A[dr][dc + 1] = 'K';
+//     }
+//     else if (is_white_piece(type))
+//     {
+//         if (C[dr - 1][dc] == '-')
+//             A[dr - 1][dc] = 'k';
+//         if (C[dr + 1][dc] == '-')
+//             A[dr + 1][dc] = 'k';
+//         if (C[dr - 1][dc - 1] == '-')
+//             A[dr - 1][dc - 1] = 'k';
+//         if (C[dr - 1][dc + 1] == '-')
+//             A[dr - 1][dc + 1] = 'k';
+//         if (C[dr + 1][dc + 1] == '-')
+//             A[dr + 1][dc + 1] = 'k';
+//         if (C[dr + 1][dc - 1] == '-')
+//             A[dr + 1][dc - 1] = 'k';
+//         if (C[dr][dc - 1] == '-')
+//             A[dr][dc - 1] = 'k';
+//         if (C[dr][dc + 1] == '-')
+//             A[dr][dc + 1] = 'k';
+//     }
+
+//     if (check(A, type))
+//     {
+//         int nr = 1;
+//         if (is_checked(A, type, dr - 1, dc) && B[dr - 1][dc] == '-')
+//             B[dr - 1][dc] = 'x', nr++;
+//         if (is_checked(A, type, dr + 1, dc) && B[dr + 1][dc] == '-')
+//             B[dr + 1][dc] = 'x', nr++;
+//         if (is_checked(A, type, dr - 1, dc - 1) && B[dr - 1][dc - 1] == '-')
+//             B[dr - 1][dc - 1] = 'x', nr++;
+//         if (is_checked(A, type, dr - 1, dc + 1) && B[dr - 1][dc + 1] == '-')
+//             B[dr - 1][dc + 1] = 'x', nr++;
+//         if (is_checked(A, type, dr + 1, dc + 1) && B[dr + 1][dc + 1] == '-')
+//             B[dr + 1][dc + 1] = 'x', nr++;
+//         if (is_checked(A, type, dr + 1, dc - 1) && B[dr + 1][dc - 1] == '-')
+//             B[dr + 1][dc - 1] = 'x', nr++;
+//         if (is_checked(A, type, dr, dc - 1) && B[dr][dc - 1] == '-')
+//             B[dr][dc - 1] = 'x', nr++;
+//         if (is_checked(A, type, dr, dc + 1) && B[dr][dc + 1] == '-')
+//             B[dr][dc + 1] = 'x', nr++;
+//         copy(A, C);
+//         if (B[dr][dc + 1] == '-' || B[dr][dc - 1] == '-' || B[dr + 1][dc - 1] == '-' || B[dr + 1][dc + 1] == '-' || B[dr - 1][dc + 1] == '-' || B[dr - 1][dc - 1] == '-' || B[dr + 1][dc] == '-' ||
+//             B[dr - 1][dc] == '-')
+//             return 0;
+//         if (nr > 1)
+//             return 1;
+//     }
+//     return 0;
+// }
+
 int check_mate(char A[9][9], char type)
 {
-    const int dir[8] = {0};
-    char B[9][9], C[9][9];
-    copy(B, A);
-    copy(C, A);
-    int i, j, dr, dc;
+    int dr, dc;
     find_my_king(A, type, dr, dc);
-    if (is_black_piece(type))
-    {
-        if (C[dr - 1][dc] == '-')
-            A[dr - 1][dc] = 'K';
-        if (C[dr + 1][dc] == '-')
-            A[dr + 1][dc] = 'K';
-        if (C[dr - 1][dc - 1] == '-')
-            A[dr - 1][dc - 1] = 'K';
-        if (C[dr - 1][dc + 1] == '-')
-            A[dr - 1][dc + 1] = 'K';
-        if (C[dr + 1][dc + 1] == '-')
-            A[dr + 1][dc + 1] = 'K';
-        if (C[dr + 1][dc - 1] == '-')
-            A[dr + 1][dc - 1] = 'K';
-        if (C[dr][dc - 1] == '-')
-            A[dr][dc - 1] = 'K';
-        if (C[dr][dc + 1] == '-')
-            A[dr][dc + 1] = 'K';
-    }
-    else if (is_white_piece(type))
-    {
-        if (C[dr - 1][dc] == '-')
-            A[dr - 1][dc] = 'k';
-        if (C[dr + 1][dc] == '-')
-            A[dr + 1][dc] = 'k';
-        if (C[dr - 1][dc - 1] == '-')
-            A[dr - 1][dc - 1] = 'k';
-        if (C[dr - 1][dc + 1] == '-')
-            A[dr - 1][dc + 1] = 'k';
-        if (C[dr + 1][dc + 1] == '-')
-            A[dr + 1][dc + 1] = 'k';
-        if (C[dr + 1][dc - 1] == '-')
-            A[dr + 1][dc - 1] = 'k';
-        if (C[dr][dc - 1] == '-')
-            A[dr][dc - 1] = 'k';
-        if (C[dr][dc + 1] == '-')
-            A[dr][dc + 1] = 'k';
-    }
 
     if (check(A, type))
     {
-        int nr = 1;
-        if (is_checked(A, type, dr - 1, dc) && B[dr - 1][dc] == '-')
-            B[dr - 1][dc] = 'x', nr++;
-        if (is_checked(A, type, dr + 1, dc) && B[dr + 1][dc] == '-')
-            B[dr + 1][dc] = 'x', nr++;
-        if (is_checked(A, type, dr - 1, dc - 1) && B[dr - 1][dc - 1] == '-')
-            B[dr - 1][dc - 1] = 'x', nr++;
-        if (is_checked(A, type, dr - 1, dc + 1) && B[dr - 1][dc + 1] == '-')
-            B[dr - 1][dc + 1] = 'x', nr++;
-        if (is_checked(A, type, dr + 1, dc + 1) && B[dr + 1][dc + 1] == '-')
-            B[dr + 1][dc + 1] = 'x', nr++;
-        if (is_checked(A, type, dr + 1, dc - 1) && B[dr + 1][dc - 1] == '-')
-            B[dr + 1][dc - 1] = 'x', nr++;
-        if (is_checked(A, type, dr, dc - 1) && B[dr][dc - 1] == '-')
-            B[dr][dc - 1] = 'x', nr++;
-        if (is_checked(A, type, dr, dc + 1) && B[dr][dc + 1] == '-')
-            B[dr][dc + 1] = 'x', nr++;
-        copy(A, C);
-        if (B[dr][dc + 1] == '-' || B[dr][dc - 1] == '-' || B[dr + 1][dc - 1] == '-' || B[dr + 1][dc + 1] == '-' || B[dr - 1][dc + 1] == '-' || B[dr - 1][dc - 1] == '-' || B[dr + 1][dc] == '-' ||
-            B[dr - 1][dc] == '-')
-            return 0;
-        if (nr > 1)
-            return 1;
+        // Check all possible moves for the king
+        for (int i = dr - 1; i <= dr + 1; i++)
+        {
+            for (int j = dc - 1; j <= dc + 1; j++)
+            {
+                if (i > 0 && i <= 8 && j > 0 && j <= 8 && A[i][j] == '-')
+                {
+                    // Temporarily move the king to see if it's still in check
+                    char temp = A[i][j];
+                    A[i][j] = type == 'k' ? 'K' : 'k';
+
+                    if (!check(A, type))
+                    {
+                        // King can escape the check, so it's not checkmate
+                        A[i][j] = temp; // Restore the board to its original state
+                        return 0;
+                    }
+
+                    A[i][j] = temp; // Restore the board to its original state
+                }
+            }
+        }
+
+        // If the king cannot move to any safe square, and no piece can block or capture the attacking piece,
+        // then it's checkmate.
+        return 1;
     }
+
+    // The player's king is not in check, so it's not checkmate.
     return 0;
 }
 
@@ -1084,7 +1122,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
 { // get move from player and determine its vadility
     string s;
     // char buffer[BUFF_SIZE];
-        std::array<char, 1024> buffer{};
+    std::array<char, 1024> buffer{};
 
     int bytes;
     char save;
@@ -1170,6 +1208,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
         json respond_type;
         respond_type["message"] = msg;
         respond_type["success"] = false;
+        respond_type["myTurn"] = true;
 
         if (send_respond(RespondType::Move, respond_type, fd) == 0)
         {
@@ -1187,6 +1226,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
         json respond_type;
         respond_type["message"] = msg;
         respond_type["success"] = false;
+        respond_type["myTurn"] = true;
 
         if (send_respond(RespondType::Move, respond_type, fd) == 0)
         {
@@ -1204,6 +1244,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
         json respond_type;
         respond_type["message"] = msg;
         respond_type["success"] = false;
+        respond_type["myTurn"] = true;
 
         if (send_respond(RespondType::Move, respond_type, fd) == 0)
         {
@@ -1218,7 +1259,6 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
 
     else
     {
-
         // cout << "current moves played: " << moves_played << endl;
         if (strcmp(msg, "surrender\n") == 0)
         {
@@ -1351,6 +1391,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                 respond_type["board"] = s;
                 respond_type["message"] = "Move executed!";
                 respond_type["success"] = true;
+                respond_type["myTurn"] = false;
 
                 moves_played += to_string(fd) + ":" + move_played;
 
@@ -1361,7 +1402,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                     return 0;
                 }
 
-                
+                respond_type["myTurn"] = true;
                 if (send_respond(RespondType::Move, respond_type, opponent_fd) == 0)
                 {
                     cout << "Failed to send move response to " << opponent_fd << endl;
@@ -1381,6 +1422,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             json respond_type;
             respond_type["message"] = msg;
             respond_type["success"] = false;
+            respond_type["myTurn"] = true;
 
             if (send_respond(RespondType::Move, respond_type, fd) == 0)
             {
@@ -1402,6 +1444,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                 json respond_type;
                 respond_type["message"] = msg;
                 respond_type["success"] = false;
+                respond_type["myTurn"] = true;
 
                 if (send_respond(RespondType::Move, respond_type, fd) == 0)
                 {
@@ -1422,6 +1465,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                 json respond_type;
                 respond_type["message"] = msg;
                 respond_type["success"] = false;
+                respond_type["myTurn"] = true;
 
                 if (send_respond(RespondType::Move, respond_type, fd) == 0)
                 {
@@ -1449,6 +1493,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
                     json respond_type;
                     respond_type["message"] = msg;
                     respond_type["success"] = false;
+                    respond_type["myTurn"] = true;
 
                     if (send_respond(RespondType::Move, respond_type, fd) == 0)
                     {
@@ -1489,15 +1534,12 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
 
             json respond_type;
             respond_type["board"] = s;
-            respond_type["message"] = "Move executed!";
+            respond_type["message"] = msg;
             respond_type["success"] = true;
+            respond_type["myTurn"] = false;
+
             moves_played += to_string(fd) + ":" + move_played;
-            if (bytes && send_respond(RespondType::Move, respond_type, opponent_fd) == 0)
-            {
-                cout << "Failed to send move response to " << opponent_fd << endl;
-                disconnect_player(opponent_fd);
-                return 0;
-            }
+
             // if (bytes && write(opponent_fd, s.c_str(), bytes) < 0)
             // {
             //     printf("[server] Error in write() to the client.\n");
@@ -1510,6 +1552,14 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], int fd, int opponent_fd, in
             {
                 cout << "Failed to send move response to " << fd << endl;
                 disconnect_player(fd);
+                return 0;
+            }
+
+            respond_type["myTurn"] = true;
+            if (bytes && send_respond(RespondType::Move, respond_type, opponent_fd) == 0)
+            {
+                cout << "Failed to send move response to " << opponent_fd << endl;
+                disconnect_player(opponent_fd);
                 return 0;
             }
 
@@ -1772,7 +1822,7 @@ void *play_game(void *arg)
                 respond_type["board"] = s;
                 respond_type["message"] = msg;
                 respond_type["success"] = true;
-
+                respond_type["myTurn"] = true;
 
                 if (bytes && send_respond(RespondType::Move, respond_type, current_fd) == 0)
                 {
@@ -1781,6 +1831,9 @@ void *play_game(void *arg)
 
                     return 0;
                 }
+
+                respond_type["myTurn"] = false;
+
                 if (bytes && send_respond(RespondType::Move, respond_type, b->fd) == 0)
                 {
                     cout << "Failed to send original board to " << b->fd << endl;
