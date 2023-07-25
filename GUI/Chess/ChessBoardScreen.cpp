@@ -267,10 +267,10 @@ void ChessBoardScreen::receiveGameStateResponse(json response)
     // Process the game state response from the server
     // Update the game state, chess board, and other relevant data based on the received data
 
+    myTurn = response["data"]["myTurn"].get<bool>();
 
     if (response["data"]["success"].get<bool>())
     {
-        myTurn = response["data"]["myTurn"];
 
         std::string responseString = response["data"]["board"].get<std::string>();
         std::cout << "gamestate responseString: " << response["data"]["board"].get<std::string>() << std::endl;
