@@ -1479,13 +1479,11 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opp
 
             if ((move == 'a' && check_mate(A, 'k')) || (move == 'b' && check_mate(A, 'K')))
             {
-                cout << "Somebody won!" << endl;
                 moves_played += this_player.username + ":" + move_played;
                 update_elo(opponent_fd, fd);
                 send_result(opponent_fd, fd, moves_played);
                 return -1;
             }
-
             if (move == 'a' && check(A, 'K'))
             {
                 strcpy(msg, "Invalid move! check!");
@@ -1586,7 +1584,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opp
             respond_type["success"] = true;
             respond_type["myTurn"] = false;
 
-            moves_played += this_player.username + ":" + move_played;
+            moves_played += this_player.username + ":" + move_played + "\n";
 
             // if (bytes && write(opponent_fd, s.c_str(), bytes) < 0)
             // {

@@ -35,6 +35,19 @@ ChessBoardScreen::ChessBoardScreen(sf::RenderWindow& window, TcpClient& tcpClien
     opponentText.setString("Waiting for an opponent..."); // Update "me" with the actual player name
 }
 
+void ChessBoardScreen::init() {
+    board = {
+    {-1, -2, -3, -4, -5, -3, -2, -1},
+    {-6, -6, -6, -6, -6, -6, -6, -6},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {6, 6, 6, 6, 6, 6, 6, 6},
+    {1, 2, 3, 4, 5, 3, 2, 1}
+    };
+}
+
 void ChessBoardScreen::handleEvent(const sf::Event& event)
 {
     if (event.type == sf::Event::Closed)

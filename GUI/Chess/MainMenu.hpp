@@ -22,11 +22,11 @@ public:
     void draw();
     Screen activeScreen;
     User user; // Store the user pointer to access user information
+    MainMenuOption currentOption = MainMenuOption::Option_MainMenu;
 
 
 private:
     sf::RenderWindow& window;
-    MainMenuOption currentOption = MainMenuOption::Option_MainMenu;
     // Add a new sf::Text object to display user information
     sf::Text userInfoText;
 

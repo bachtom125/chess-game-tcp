@@ -76,4 +76,5 @@ private:
     void sendMoveToServer(const std::string& move);
     void convertBoardResponse(int[8][8], std::string);
     void displayErrorMessage(const std::string& message);
+    void init();
 };

@@ -135,6 +135,7 @@
     <ClCompile Include="LoginScreen.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenu.cpp" />
+    <ClCompile Include="ResultScreen.cpp" />
     <ClCompile Include="ScreenManager.cpp" />
     <ClCompile Include="TcpClient.cpp" />
   </ItemGroup>
@@ -144,6 +145,7 @@
     <ClInclude Include="LoginScreen.hpp" />
     <ClInclude Include="MainMenu.hpp" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="ResultScreen.hpp" />
     <ClInclude Include="ScreenManager.hpp" />
     <ClInclude Include="TcpClient.hpp" />
   </ItemGroup>

@@ -7,7 +7,8 @@ ScreenManager::ScreenManager(sf::RenderWindow& window, TcpClient& tcpClient)
     loginScreen(window, tcpClient),
     mainMenu(window),
     chessBoardScreen(window, tcpClient),
-    currentScreen(Screen::Login)
+    currentScreen(Screen::Login),
+    resultScreen(window)
 {
     startListeningToServerResponses();
 }
@@ -50,6 +51,10 @@ void ScreenManager::handleEvents()
         else if (currentScreen == Screen::ChessBoardScreen) {
             chessBoardScreen.handleEvent(event);
         }
+
+        else if (currentScreen == Screen::ResultScreen) {
+            resultScreen.handleEvent(event);
+        }
     }
 }
 
@@ -77,6 +82,16 @@ void ScreenManager::update()
     else if (currentScreen == Screen::ChessBoardScreen) {
         chessBoardScreen.update();
     }
+
+    else if (currentScreen == Screen::ResultScreen) {
+        resultScreen.update();
+        if (resultScreen.backToMainMenu) {
+            currentScreen = Screen::MainMenu;
+            mainMenu.currentOption = MainMenuOption::Option_MainMenu;
+            mainMenu.activeScreen = Screen::MainMenu;
+            resultScreen.backToMainMenu = false;
+        }
+    }
 }
 
 void ScreenManager::draw()
@@ -94,6 +109,10 @@ void ScreenManager::draw()
     }
     else if (currentScreen == Screen::ChessBoardScreen) {
         chessBoardScreen.draw();
+        window.display();
+    }
+    else if (currentScreen == Screen::ResultScreen){
+        resultScreen.draw();
         window.display();
     }
 
@@ -125,6 +144,17 @@ void ScreenManager::handleServerResponses()
             }
             else if (responseType == RespondType::Login) {
                 loginScreen.handleLoginResponse(response);
+            }
+            else if (responseType == RespondType::GameResult) {
+                currentScreen = Screen::ResultScreen;
+                ChessBoardScreen *temp = new ChessBoardScreen(window, tcpClient);
+                chessBoardScreen = (*temp);
+                mainMenu.currentOption = Option_MainMenu;
+                resultScreen.gameLog = response["data"]["log"].get<std::string>();
+                resultScreen.winner = response["data"]["winner"]["username"].get<std::string>();
+                resultScreen.winnerElo = response["data"]["winner"]["elo"].get<int>();
+                resultScreen.loser = response["data"]["loser"]["username"].get<std::string>();
+                resultScreen.loserElo = response["data"]["loser"]["elo"].get<int>();
             }
          }
     }
