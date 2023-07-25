@@ -24,6 +24,7 @@ public:
 private:
     bool isMatchFound = false;
     bool isMoveAllowed = false;
+    bool myTurn = true;
     std::string matchId;
 
     TcpClient& tcpClient; // TcpClient member variable

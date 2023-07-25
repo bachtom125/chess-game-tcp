@@ -43,7 +43,7 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
         window.close();
     }
 
-    if(isMatchFound)
+    if(isMatchFound && myTurn)
     {
 
         // Handle events specific to the chess board screen
@@ -86,7 +86,7 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
                     std::cout << "Start release (possible send move) " << std::endl;
                     sendMoveToServer(moveStr);
                 }
-                f[n].setPosition(newPos);
+                // f[n].setPosition(newPos);
             }
 
             firstMouseRelease = false;
@@ -268,9 +268,10 @@ void ChessBoardScreen::receiveGameStateResponse(json response)
     // Update the game state, chess board, and other relevant data based on the received data
 
 
-
     if (response["data"]["success"].get<bool>())
     {
+        myTurn = response["data"]["myTurn"];
+
         std::string responseString = response["data"]["board"].get<std::string>();
         std::cout << "gamestate responseString: " << response["data"]["board"].get<std::string>() << std::endl;
 
