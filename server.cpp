@@ -24,9 +24,11 @@
 
 #define PORT 3000
 
-#define BUFF_SIZE 1024
+#define BUFF_SIZE 10
 using namespace std;
 using json = nlohmann::json;
+const string DELIMITER = "-|";
+const string END_DELIMITER = "=|"; // End delimiter to signify the complete message
 
 extern int errno;
 
@@ -241,12 +243,41 @@ bool send_request(RequestType type, const json &request_data, int sd)
     // Serialize the request JSON
     string serializedRequest = request.dump();
     // cout << "about to send this bro" << serializedRequest << endl;
-    if (send(sd, serializedRequest.c_str(), serializedRequest.size(), 0) == -1)
+    // Working ...
+    size_t pos = 0;
+    string chunk;
+    while (pos < serializedRequest.length())
+    {
+        size_t end_pos = serializedRequest.find(DELIMITER, pos);
+        if (end_pos == string::npos)
+        {
+            chunk = serializedRequest.substr(pos);
+            pos = serializedRequest.length();
+        }
+        else
+        {
+            chunk = serializedRequest.substr(pos, end_pos - pos);
+            pos = end_pos + DELIMITER.length();
+        }
+        // send_chunk(client_socket, chunk);
+        string chunk_with_delimiter = chunk + DELIMITER;
+        if (send(sd, chunk_with_delimiter.c_str(), chunk_with_delimiter.size(), 0) == -1)
+        {
+            cerr << "Error occurred while sending the request to the client." << endl;
+            close(sd);
+            return 0;
+        }
+    }
+
+    // Send the end delimiter to signify the complete message
+    // send(client_socket, END_DELIMITER.c_str(), END_DELIMITER.length(), 0);
+    if (send(sd, END_DELIMITER.c_str(), END_DELIMITER.length(), 0) == -1)
     {
         cerr << "Error occurred while sending the request to the client." << endl;
         close(sd);
         return 0;
     }
+
     return 1;
 }
 bool send_respond(RespondType type, const json &respond_data, int sd)
@@ -259,13 +290,61 @@ bool send_respond(RespondType type, const json &respond_data, int sd)
 
     // Serialize the respond JSON
     string serializedRespond = respond.dump();
-    // cout << "about to send this bro" << serializedRespond << endl;
-    if (send(sd, serializedRespond.c_str(), serializedRespond.size(), 0) == -1)
+    // size_t pos = 0;
+    // string chunk;
+    // while (pos < serializedRespond.length())
+    // {
+    //     size_t end_pos = serializedRespond.find(DELIMITER, pos);
+    //     if (end_pos == string::npos)
+    //     {
+    //         chunk = serializedRespond.substr(pos);
+    //         pos = serializedRespond.length();
+    //     }
+    //     else
+    //     {
+    //         chunk = serializedRespond.substr(pos, end_pos - pos);
+    //         pos = end_pos + DELIMITER.length();
+    //     }
+    //     // send_chunk(client_socket, chunk);
+    //     string chunk_with_delimiter = chunk + DELIMITER;
+    //     if (send(sd, chunk_with_delimiter.c_str(), chunk_with_delimiter.size(), 0) == -1)
+    //     {
+    //         cerr << "Error occurred while sending the response to the client." << endl;
+    //         close(sd);
+    //         return 0;
+    //     }
+    //     cout << "about to send " << chunk_with_delimiter << " to " << sd << endl;
+    // }
+
+    size_t pos = 0;
+    string chunk;
+    while (pos < serializedRespond.length())
     {
-        cerr << "Error occurred while sending the respond to the server." << endl;
+        chunk = serializedRespond.substr(pos, BUFF_SIZE);
+        pos += BUFF_SIZE;
+        string chunk_with_delimiter = chunk + DELIMITER;
+        if (send(sd, chunk_with_delimiter.c_str(), chunk_with_delimiter.size(), 0) == -1)
+        {
+            cerr << "Error occurred while sending the response to the client." << endl;
+            close(sd);
+            return 0;
+        }
+        // cout << "about to send " << chunk_with_delimiter << " to " << sd << endl;
+    }
+    // Send the end delimiter to signify the complete message
+    // send(client_socket, END_DELIMITER.c_str(), END_DELIMITER.length(), 0);
+    if (send(sd, END_DELIMITER.c_str(), END_DELIMITER.length(), 0) == -1)
+    {
+        cerr << "Error occurred while sending the response to the client." << endl;
         close(sd);
         return 0;
     }
+    // if (send(sd, serializedRespond.c_str(), serializedRespond.size(), 0) == -1)
+    // {
+    //     cerr << "Error occurred while sending the respond to the server." << endl;
+    //     close(sd);
+    //     return 0;
+    // }
     return 1;
 }
 
@@ -446,13 +525,6 @@ bool handleLoginRequest(const json &requestData, int client_fd)
         return 0;
     }
     return 1;
-
-    // if (send(client_fd, responseStr.c_str(), responseStr.size(), 0) == -1)
-    // {
-    //     cout << "Failed to send response to client" << endl;
-    //     disconnect_player(client_fd);
-    //     return 0;
-    // }
 }
 
 void remove_player_from_matchmaking()
@@ -490,17 +562,6 @@ bool disconnect_player(int fd)
 
 json convert_to_json(string buffer, int bytes)
 {
-    // handle before calling ...
-    // array<char, 1024> buffer{};
-    // ssize_t bytes = recv(client_fd, buffer, buffer.size(), 0);
-    // if (bytes <= 0)
-    // {
-    //     cerr << "Error receiving data" << endl;
-    //     close(client_fd);
-    //     continue;
-    // }
-    // Parse the received data into JSON
-    // string respond_type(buffer, bytes);
     string request_data = buffer;
     cout << request_data << endl;
     // Find the position of the first opening brace '{'
@@ -1188,7 +1249,7 @@ void send_result(int loser_fd, int winner_fd, string moves_played)
     Player *winner = find_online_player(winner_fd);
     Player *loser = find_online_player(loser_fd);
 
-    char msg[BUFF_SIZE];
+    char msg[100];
     strcpy(msg, "winner");
     cout << "ALL MOVES " << moves_played << endl;
 
@@ -1224,8 +1285,8 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opp
     int fd = this_player.fd;
     int bytes;
     char save;
-    char msg[BUFF_SIZE];
-    char msgrasp[BUFF_SIZE] = " ";
+    char msg[1000];
+    char msgrasp[1000] = " ";
 
     bytes = recv(fd, buffer.data(), buffer.size(), 0);
     // bytes = read(fd, buffer, sizeof(buffer));
@@ -1463,8 +1524,19 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opp
             if (!ok)
             {
                 strcpy(msg, "Castling is not possible!");
-                if (write(fd, msg, strlen(msg)) < 0)
+                json respond_type;
+                respond_type["message"] = msg;
+                respond_type["success"] = false;
+                respond_type["myTurn"] = true;
+
+                if (send_respond(RespondType::Move, respond_type, fd) == 0)
+                {
+                    cout << "Failed to send move response to " << fd << endl;
+                    disconnect_player(fd);
                     return 0;
+                }
+                // if (write(fd, msg, strlen(msg)) < 0)
+                //     return 0;
                 return -2;
             }
             else if (ok)

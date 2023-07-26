@@ -35,9 +35,11 @@ extern int errno;
 
 using namespace std;
 #define PORT 3000
-#define BUFF_SIZE 1024
+#define BUFF_SIZE 10
 using json = nlohmann::json;
 
+const string DELIMITER = "-|";
+const string END_DELIMITER = "=|"; // End delimiter to signify the complete message
 extern int errno;
 
 struct Player
@@ -72,6 +74,44 @@ enum class RespondType
     OnlinePlayersList,
 };
 
+string receive_from_server(int sd)
+{
+    array<char, BUFF_SIZE> buffer{};
+    string responseData = "";
+    string currentData = "";
+    while (true)
+    {
+        // Receive data from the client
+        ssize_t bytes_received = recv(sd, buffer.data(), BUFF_SIZE, 0);
+        if (bytes_received < 0)
+        {
+            cerr << "Error receiving data." << endl;
+            close(sd);
+            return "";
+        }
+        else
+        {
+            // Append the received data to the current data
+            currentData += string(buffer.data(), bytes_received);
+            // cout << "currentData :" << currentData << "::" << endl;
+
+            // Check if the end delimiter is received
+
+            // Process the message in chunks, using the delimiter
+            size_t delimiter_pos;
+            while ((delimiter_pos = currentData.find(DELIMITER)) != string::npos)
+            {
+                string chunk = currentData.substr(0, delimiter_pos);
+                responseData += chunk;
+                // Remove the processed chunk (including the delimiter) from the current data
+                currentData.erase(0, delimiter_pos + DELIMITER.length());
+            }
+            if (currentData.find(END_DELIMITER) != string::npos)
+                break; // Complete message received
+        }
+    }
+    return responseData;
+}
 string reverse_convert(int a[8][8])
 {
     string s = "";
@@ -150,16 +190,17 @@ bool send_request(RequestType type, const json &request_data, int sd)
 
 json receive_respond(int sd) // get respond and return corresponding json object
 {
-    array<char, 1024> buffer{};
-    ssize_t bytesRead = recv(sd, buffer.data(), buffer.size(), 0);
-    if (bytesRead <= 0)
-    {
-        cerr << "Error receiving data" << endl;
-        close(sd);
-        return NULL;
-    }
+    // array<char, 1024> buffer{};
+    // ssize_t bytesRead = recv(sd, buffer.data(), buffer.size(), 0);
+    // if (bytesRead <= 0)
+    // {
+    //     cerr << "Error receiving data" << endl;
+    //     close(sd);
+    //     return NULL;
+    // }
 
-    string respond_data(buffer.data(), bytesRead);
+    // string respond_data(buffer.data(), bytesRead);
+    string respond_data = receive_from_server(sd);
     cout << respond_data << endl;
 
     size_t bracePos = respond_data.find_first_of('{');
@@ -343,20 +384,23 @@ void *receive_game_data(void *arg)
     string s;
 
     int bytes;
-    char msg[BUFF_SIZE];
+    char msg[100];
     while (in_game)
     {
-        array<char, 1024> buffer{};
-        ssize_t bytesRead = recv(sd, buffer.data(), buffer.size(), 0);
-        if (bytesRead <= 0)
-        {
-            cerr << "Error receiving data" << endl;
-            in_game = 0;
-            continue;
-        }
+        // array<char, 1024> buffer{};
+        // ssize_t bytesRead = recv(sd, buffer.data(), buffer.size(), 0);
+        // if (bytesRead <= 0)
+        // {
+        //     cerr << "Error receiving data" << endl;
+        //     in_game = 0;
+        //     continue;
+        // }
 
-        // Parse the received data into JSON
-        string responseData(buffer.data(), bytesRead);
+        // // Parse the received data into JSON
+        // string responseData(buffer.data(), bytesRead);
+        string responseData = receive_from_server(sd);
+        cout << "got this" << responseData << endl;
+
         // Find the position of the first opening brace '{'
         size_t bracePos = responseData.find_first_of('{');
         if (bracePos != string::npos)
@@ -366,7 +410,7 @@ void *receive_game_data(void *arg)
 
             // Parse the extracted JSON substring
             json jsonData = json::parse(jsonSubstring);
-            // cout << "server said: " << jsonData << endl;
+            cout << "server said: " << jsonData << endl;
 
             // Determine the type of request and dispatch to the appropriate handler
             int responseType = jsonData["type"];
