@@ -389,6 +389,22 @@ bool handleChallengeRequest(const json &requestData, int client_fd)
     cout << challenger_username << " challenged " << opponent_username << " with this board " << board << endl;
 
     int opponent_fd = find_player_fd(opponent_username);
+    Player *opponent_player = find_online_player(opponent_fd);
+    if (!opponent_player || !(opponent_player->free))
+    {
+        json respond_type;
+        respond_type["message"] = opponent_username + " not available!";
+        respond_type["success"] = false;
+
+        if (send_respond(RespondType::Challenge, respond_type, client_fd) == 0)
+        {
+            cout << "Failed to send out challenge respond to " << client_fd << endl;
+            disconnect_player(client_fd);
+            return 0;
+        }
+        return 1;
+    }
+
     json respond_type;
     respond_type["challenger"] = challenger_username;
     respond_type["board"] = board;
