@@ -1250,6 +1250,18 @@ void send_result(int loser_fd, int winner_fd, string moves_played)
     Player *winner = find_online_player(winner_fd);
     Player *loser = find_online_player(loser_fd);
 
+    struct sockaddr_in client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+    char winner_ip[100], loser_ip[100];
+
+    if (getpeername(winner_fd, reinterpret_cast<struct sockaddr *>(&client_addr), &addr_len) == 0)
+        strcpy(winner_ip, inet_ntoa(client_addr.sin_addr));
+
+    if (getpeername(loser_fd, reinterpret_cast<struct sockaddr *>(&client_addr), &addr_len) == 0)
+        strcpy(loser_ip, inet_ntoa(client_addr.sin_addr));
+
+    string log = "Players IP addresses: " + string(winner_ip) + " - " + string(loser_ip) + '\n' + moves_played;
+
     char msg[100];
     strcpy(msg, "winner");
     cout << "ALL MOVES " << moves_played << endl;
@@ -1258,7 +1270,7 @@ void send_result(int loser_fd, int winner_fd, string moves_played)
     respond_type = {{"winner", {{"username", (*winner).username}, {"elo", (*winner).elo}}}, {"loser", {{"username", (*loser).username}, {"elo", (*loser).elo}}}};
 
     respond_type["message"] = msg;
-    respond_type["log"] = moves_played;
+    respond_type["log"] = log;
     respond_type["matchId"] = generate_uid();
 
     if (send_respond(RespondType::GameResult, respond_type, winner_fd) == 0)
