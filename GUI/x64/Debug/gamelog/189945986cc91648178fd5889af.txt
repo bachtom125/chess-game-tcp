@@ -1,0 +1,9 @@
+Players IP addresses: 127.0.0.1 - 127.0.0.1
+user:d2 d3
+one:d7 d5
+user:e2 e3
+one:g7 g6
+user:c2 c3
+one:h7 h6
+user:d1 a4
+one:surrender

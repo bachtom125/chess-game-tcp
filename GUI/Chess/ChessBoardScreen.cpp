@@ -292,7 +292,7 @@ void ChessBoardScreen::loadPosition(bool loadTexture)
             int x = abs(n) - 1;
             int y = n > 0 ? 0 : 1;
             if(loadTexture) f[k].setTextureRect(sf::IntRect(size * x, size * y, size, size));
-            f[k].setPosition(size * j, size * (7 - i));
+            f[k].setPosition(size * (isWhite ? j : (7 - j)), size * (isWhite ? (7 - i) : i));
             k++;
         }
     }
@@ -337,8 +337,8 @@ BoardPosition ChessBoardScreen::toBoardPosition(sf::Vector2f p)
 std::string ChessBoardScreen::toChessNote(sf::Vector2f p)
 {
     std::string s = "";
-    s += static_cast<char>(p.x / size + 97);
-    s += static_cast<char>(7 - p.y / size + 49);
+    s += static_cast<char>(isWhite ? (p.x / size + 97) : (7 - p.x / size + 97));
+    s += static_cast<char>(isWhite ? (7 - p.y / size + 49) : (p.y / size + 49));
     return s;
 }
 
@@ -423,11 +423,13 @@ bool ChessBoardScreen::handleMatchMakingResponse(json response) {
         std::cout << "Me from Client: " << user.username <<  '/' << response["data"]["user1"]["username"].get<std::string>() << '/' << std::endl;
         if(user.username == response["data"]["user1"]["username"].get<std::string>())
         {
+            isWhite = true;
             std::cout << "meText: " << "Me: " + response["data"]["user1"]["username"].get<std::string>() + std::to_string(response["data"]["user1"]["elo"].get<int>()) << std::endl;
             meText.setString("Me: " + response["data"]["user1"]["username"].get<std::string>()+ " " + std::to_string(response["data"]["user1"]["elo"].get<int>())); // Update "me" with the actual player name
             opponentText.setString("Opponent: " + response["data"]["user2"]["username"].get<std::string>() + " " + std::to_string(response["data"]["user2"]["elo"].get<int>()));
         }
         else {
+            isWhite = false;
             opponentText.setString("Opponent: " + response["data"]["user1"]["username"].get<std::string>() + std::to_string(response["data"]["user1"]["elo"].get<int>())); // Update "me" with the actual player name
             meText.setString("Me: " + response["data"]["user2"]["username"].get<std::string>() + std::to_string(response["data"]["user2"]["elo"].get<int>()));
         }
