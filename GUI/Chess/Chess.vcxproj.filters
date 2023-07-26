@@ -104,5 +104,6 @@
     <None Include="..\..\16_Games\16_Games\14 Chess\stockfish.exe">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

@@ -157,6 +157,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\16_Games\16_Games\14 Chess\stockfish.exe" />
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\16_Games\16_Games\14 Chess\images\board.png" />

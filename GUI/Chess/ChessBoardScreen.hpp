@@ -67,6 +67,7 @@ private:
     sf::Font font;
     sf::Text meText;
     sf::Text opponentText;
+    bool isWhite = true;
 
     void handleTextInput(sf::Text& text, const sf::Event& event);
     // Function to handle matchmaking request and response

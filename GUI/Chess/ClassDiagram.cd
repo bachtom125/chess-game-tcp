@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" GroupingSetting="Access" MembersFormat="FullSignature">
+  <Class Name="ChallengeScreen" Collapsed="true">
+    <Position X="2.75" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ASIAAABAAAAAEBAAAAIIAAAAIBAABAAIAgAAAAAgAGA=</HashCode>
+      <FileName>ChallengeScreen.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ChessBoardScreen" Collapsed="true">
+    <Position X="2.75" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAaAAAiA4AEgAFCQAYIKNAEAIDAlwCO6MAwgAghkFQA=</HashCode>
+      <FileName>ChessBoardScreen.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="LoginScreen" Collapsed="true">
+    <Position X="12.25" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAQIAAAAAAEBAAAQIAAAoAIEYQAFAqgAAAAABEAxA=</HashCode>
+      <FileName>LoginScreen.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="MainMenu" Collapsed="true">
+    <Position X="12.25" Y="1.75" Width="1.5" />
+    <Members>
+      <Field Name="tcpClient" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>gCICAAAAAACAEJggAAIEAABQoAAAABAIAAAAAAAEAQA=</HashCode>
+      <FileName>MainMenu.hpp</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Field Name="tcpClient" />
+    </ShowAsAssociation>
+  </Class>
+  <Class Name="OnlineUserListScreen" Collapsed="true">
+    <Position X="12.25" Y="3.5" Width="1.5" />
+    <Members>
+      <Field Name="userList" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>ACIAAABMFAAAEBABMQIgAAAAAQAEABQogAAAACBEwCA=</HashCode>
+      <FileName>OnlineUserListScreen.hpp</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Field Name="userList" />
+    </ShowAsAssociation>
+  </Class>
+  <Class Name="ResultScreen" Collapsed="true">
+    <Position X="2.75" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAEAAAAAEAAZQAAEIAAQAgAQABAAAIAAAAAEAEAAA=</HashCode>
+      <FileName>ResultScreen.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ScreenManager">
+    <Position X="7.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEAAAgAgAkBQABIAAAIAAAAAIQAEEAAKAAAgAAEEAQA=</HashCode>
+      <FileName>ScreenManager.hpp</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Field Name="mainMenu" />
+      <Field Name="tcpClient" />
+      <Field Name="challengeScreen" />
+      <Field Name="loginScreen" />
+      <Field Name="chessBoardScreen" />
+      <Field Name="onlineUserListScreen" />
+      <Field Name="resultScreen" />
+    </ShowAsAssociation>
+  </Class>
+  <Class Name="TcpClient" Collapsed="true">
+    <Position X="7.75" Y="7" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAIAAAQEAAgBAAAAAAAAAAgAAAAAEAEAAAAAA=</HashCode>
+      <FileName>TcpClient.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
