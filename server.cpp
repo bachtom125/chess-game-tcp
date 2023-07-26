@@ -24,7 +24,7 @@
 
 #define PORT 3000
 
-#define BUFF_SIZE 10
+#define BUFF_SIZE 1024
 using namespace std;
 using json = nlohmann::json;
 const string DELIMITER = "-|";
@@ -1998,18 +1998,6 @@ void convert_to_2dchar(char a[9][9], string s)
             a[i][j] = s[k++];
     }
 }
-
-
-void convert_to_2dchar(char a[9][9], string s)
-{
-    int k = 0;
-    for (int i = 1; i <= 8; i++)
-    {
-        for (int j = 1; j <= 8; j++)
-        a[i][j] = s[k++];
-    }
-}
-
 
 void *play_game(void *arg)
 {

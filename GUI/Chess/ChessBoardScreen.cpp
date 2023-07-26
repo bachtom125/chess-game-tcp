@@ -12,7 +12,7 @@ ChessBoardScreen::ChessBoardScreen(sf::RenderWindow& window, TcpClient& tcpClien
     for (int i = 0; i < 32; i++)
         f[i].setTexture(t1);
 
-    loadPosition();
+    loadPosition(true);
 
     // Load the font
     if (!font.loadFromFile("fonts/inter.ttf")) {
@@ -80,10 +80,11 @@ void ChessBoardScreen::init() {
     
     }
     opponentText.setString("Waiting for an opponent..."); // Update "me" with the actual player name
-    loadPosition();
     isMatchFound = false;
     firstMouseRelease = true;
     startFindingMatchMaking = false;
+    isInit = true;
+    isUpdatingPosition = true;
     position = "";
 
 }
@@ -238,6 +239,10 @@ void ChessBoardScreen::update()
         }
 
     }
+    if ((isMatchFound || isInit) && isUpdatingPosition) {
+        loadPosition(true);
+        isUpdatingPosition = false;
+    }
 
 }
 
@@ -274,7 +279,7 @@ void ChessBoardScreen::draw()
 
 }
 
-void ChessBoardScreen::loadPosition()
+void ChessBoardScreen::loadPosition(bool loadTexture)
 {
     int k = 0;
     for (int i = 0; i < 8; i++)
@@ -286,7 +291,7 @@ void ChessBoardScreen::loadPosition()
                 continue;
             int x = abs(n) - 1;
             int y = n > 0 ? 0 : 1;
-            f[k].setTextureRect(sf::IntRect(size * x, size * y, size, size));
+            if(loadTexture) f[k].setTextureRect(sf::IntRect(size * x, size * y, size, size));
             f[k].setPosition(size * j, size * (7 - i));
             k++;
         }
@@ -458,7 +463,7 @@ void ChessBoardScreen::receiveGameStateResponse(json response)
         }
         std::cout << std::endl;
     }
-    loadPosition();
+    isUpdatingPosition = true;
 }
 
 void ChessBoardScreen::sendMoveToServer(const std::string& move)

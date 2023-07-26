@@ -36,7 +36,7 @@ private:
 
     TcpClient& tcpClient; // TcpClient member variable
 
-    void loadPosition();
+    void loadPosition(bool loadTexture);
     void move(std::string str);
     std::string toChessNote(sf::Vector2f p);
     sf::Vector2f toCoord(char a, char b);
@@ -92,4 +92,6 @@ private:
     BoardPosition toBoardPosition(sf::Vector2f p);
     bool sendChallengeRequest();
     std::string reverseConvert(int a[8][8]);
+    bool isInit = true;
+    bool isUpdatingPosition = false;
 };

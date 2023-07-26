@@ -103,20 +103,14 @@ void ScreenManager::update()
     else if (currentScreen == Screen::ResultScreen) {
         resultScreen.update();
         if (resultScreen.backToMainMenu) {
-            currentScreen = Screen::MainMenu;
-            mainMenu.currentOption = MainMenuOption::Option_MainMenu;
-            mainMenu.activeScreen = Screen::MainMenu;
-            resultScreen.backToMainMenu = false;
+            getBackToMainMenuScreen();
         }
     }
 
     else if (currentScreen == Screen::OnlineUserListScreen) {
         onlineUserListScreen.update();
         if (onlineUserListScreen.isBack) {
-            currentScreen = Screen::MainMenu;
-            mainMenu.currentOption = MainMenuOption::Option_MainMenu;
-            mainMenu.activeScreen = Screen::MainMenu;
-            onlineUserListScreen.isBack = false;
+            getBackToMainMenuScreen();
         }
         if (onlineUserListScreen.selectedUsername != "") {
             currentScreen = Screen::ChessBoardScreen;
@@ -126,9 +120,7 @@ void ScreenManager::update()
     }
     else if (currentScreen == Screen::ChallengeScreen) {
         if(!challengeScreen.isChallengeVisible()) {
-            currentScreen = Screen::MainMenu;
-            mainMenu.currentOption = MainMenuOption::Option_MainMenu;
-            mainMenu.activeScreen = Screen::MainMenu;
+            getBackToMainMenuScreen();
         }
     }
 }
@@ -218,11 +210,30 @@ void ScreenManager::handleServerResponses()
                 onlineUserListScreen.receiveUserListData(response["data"]);
             }
             else if (responseType == RespondType::Challenge) {
+                if (response["data"].contains("success")) {
+                    if(response["data"]["success"].get<bool>() == false)
+                    {
+                        getBackToMainMenuScreen();
+                        continue;
+                    }
+                }
                 challengeScreen.showChallenge(response["data"]["challenger"].get<std::string>());
                 currentScreen = Screen::ChallengeScreen;
             }
          }
     }
+}
+
+void ScreenManager::getBackToMainMenuScreen() {
+    currentScreen = Screen::MainMenu;
+    mainMenu.currentOption = MainMenuOption::Option_MainMenu;
+    mainMenu.activeScreen = Screen::MainMenu;
+    onlineUserListScreen.selectedUsername = "";
+    chessBoardScreen.init();
+    onlineUserListScreen.isBack = false;
+    resultScreen.backToMainMenu = false;
+
+
 }
 
 void ChessBoardScreen::displayErrorMessage(const std::string& message)

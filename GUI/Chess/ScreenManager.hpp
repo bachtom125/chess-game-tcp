@@ -54,4 +54,5 @@ private:
     void startListeningToServerResponses();
     void stopListeningToServerResponses();
     bool writeStringToFile(const std::string& filename, const std::string& content);
+    void getBackToMainMenuScreen();
 };

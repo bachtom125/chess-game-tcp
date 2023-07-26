@@ -1,0 +1,12 @@
+user:e2 e3
+one:f7 f6
+user:d2 d4
+one:h7 h5
+user:g2 g4
+one:g8 h6
+user:f2 f4
+one:h8 g8
+user:h2 h3
+one:h5 g4
+user:h3 g4
+one:surrender
