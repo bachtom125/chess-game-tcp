@@ -15,7 +15,7 @@ enum MainMenuOption
 class MainMenu
 {
 public:
-    MainMenu(sf::RenderWindow& window);
+    MainMenu(sf::RenderWindow& window, TcpClient& tcpClient);
 
     void handleEvent(const sf::Event& event);
     void update();
@@ -27,6 +27,7 @@ public:
 
 private:
     sf::RenderWindow& window;
+    TcpClient& tcpClient;
     // Add a new sf::Text object to display user information
     sf::Text userInfoText;
 

@@ -393,7 +393,7 @@ bool handleChallengeRequest(const json &requestData, int client_fd)
     respond_type["challenger"] = challenger_username;
     respond_type["board"] = board;
 
-    if (send_request(RequestType::Challenge, respond_type, opponent_fd) == 0)
+    if (send_respond(RespondType::Challenge, respond_type, opponent_fd) == 0)
     {
         cout << "Failed to send out challenge to " << opponent_fd << endl;
         disconnect_player(opponent_fd);
@@ -439,7 +439,7 @@ bool handleChallengeRequest(const json &requestData, int client_fd)
         respond_type["message"] = opponent_username + " rejected your challenge!";
         respond_type["success"] = false;
 
-        if (send_request(RequestType::Challenge, respond_type, client_fd) == 0)
+        if (send_respond(RespondType::Challenge, respond_type, client_fd) == 0)
         {
             cout << "Failed to send out challenge respond to " << client_fd << endl;
             disconnect_player(client_fd);
@@ -1998,6 +1998,18 @@ void convert_to_2dchar(char a[9][9], string s)
             a[i][j] = s[k++];
     }
 }
+
+
+void convert_to_2dchar(char a[9][9], string s)
+{
+    int k = 0;
+    for (int i = 1; i <= 8; i++)
+    {
+        for (int j = 1; j <= 8; j++)
+        a[i][j] = s[k++];
+    }
+}
+
 
 void *play_game(void *arg)
 {

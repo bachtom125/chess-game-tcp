@@ -7,6 +7,10 @@
 
 using Fixed2DArray = int[8][8];
 
+struct BoardPosition {
+    int row;
+    int col;
+};
 
 class ChessBoardScreen
 {
@@ -17,10 +21,12 @@ public:
     void update();
     void draw();
     void receiveGameStateResponse(json response);
-    void handleMatchMakingResponse(json data);
+    bool handleMatchMakingResponse(json data);
     void init();
     bool startFindingMatchMaking = false;
     User user;
+    bool isChallengeMode = false;
+    std::string opponent = "";
 
 private:
     bool isMatchFound = false;
@@ -56,7 +62,7 @@ private:
     float dx = 0, dy = 0;
     sf::Vector2f oldPos, newPos;
     std::string str;
-    int n = 0;
+    int n = -1;
     bool firstMouseRelease = true;
     sf::Font font;
     sf::Text meText;
@@ -79,4 +85,11 @@ private:
     void displayErrorMessage(const std::string& message);
     sf::RectangleShape resignButton;
     sf::Text resignButtonText;
+
+    sf::RectangleShape challengeButton;
+    sf::Text challengeButtonText;
+
+    BoardPosition toBoardPosition(sf::Vector2f p);
+    bool sendChallengeRequest();
+    std::string reverseConvert(int a[8][8]);
 };
