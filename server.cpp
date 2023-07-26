@@ -239,7 +239,7 @@ bool send_request(RequestType type, const json &request_data, int sd)
 
     // Serialize the request JSON
     string serializedRequest = request.dump();
-    cout << "about to send this bro" << serializedRequest << endl;
+    // cout << "about to send this bro" << serializedRequest << endl;
     if (send(sd, serializedRequest.c_str(), serializedRequest.size(), 0) == -1)
     {
         cerr << "Error occurred while sending the request to the client." << endl;
@@ -251,14 +251,14 @@ bool send_request(RequestType type, const json &request_data, int sd)
 bool send_respond(RespondType type, const json &respond_data, int sd)
 {
     // Create the respond JSON
-    cout << "Respond Sent to " << sd << " :" << respond_data << endl;
+    // cout << "Respond Sent to " << sd << " :" << respond_data << endl;
     json respond;
     respond["type"] = static_cast<int>(type);
     respond["data"] = respond_data;
 
     // Serialize the respond JSON
     string serializedRespond = respond.dump();
-    cout << "about to send this bro" << serializedRespond << endl;
+    // cout << "about to send this bro" << serializedRespond << endl;
     if (send(sd, serializedRespond.c_str(), serializedRespond.size(), 0) == -1)
     {
         cerr << "Error occurred while sending the respond to the server." << endl;
@@ -282,7 +282,11 @@ bool handleMatchMakingRequest(const json &requestData, int client_fd)
 
     // if reaches here, then player is both logged in and online
     cout << "This player : " << this_player->username << endl;
+    unique_lock<mutex> lock(queue_mutex);
+
     match_making_players.push(this_player);
+    lock.unlock();
+
     this_player->free = 0;
     while (1)
     {
@@ -1312,7 +1316,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opp
     else
     {
         // cout << "current moves played: " << moves_played << endl;
-        if (strcmp(msg, "surrender\n") == 0)
+        if (strcmp(msg, "surrender") == 0)
         {
             moves_played += this_player.username + ":" + move_played;
             update_elo(fd, opponent_fd);
@@ -1780,45 +1784,95 @@ int main()
 
 void *match_making_system(void *arg)
 {
+    int max_dif = 200; // maximum difference between two players that can be matched
+    char A[9][9];
+    create_table(A);
+    string s = convert(A);
     while (true)
     {
-        char A[9][9];
         if (match_making_players.size() < 2)
             continue;
         unique_lock<mutex> lock(queue_mutex);
 
-        // Pair the first two players in the queue
-        Player *player_a = match_making_players.front();
-        match_making_players.pop();
-        Player *player_b = match_making_players.front();
-        match_making_players.pop();
-
-        lock.unlock();
-
-        // make initial board
-        create_table(A);
-        string s = convert(A);
-        // thread for managing game play
-        PlayGameThreadData *game_data = new PlayGameThreadData;
-        game_data->player_a = player_a;
-        game_data->player_b = player_b;
-        game_data->initial_board = s;
-
-        pthread_t tid;
-        int thread_check = pthread_create(&tid, NULL, &play_game, game_data);
-        if (thread_check != 0)
+        vector<pair<Player *, int>> match_making_players_vector; // player - isMatched?
+        while (!match_making_players.empty())
         {
-            cerr << "Failed to create thread." << endl;
-            break;
+            match_making_players_vector.push_back(make_pair(match_making_players.front(), 0));
+            match_making_players.pop();
         }
 
-        // Wait for the game thread to finish
-        // thread_check = pthread_join(tid, NULL);
+        for (int i = 0; i < match_making_players_vector.size() - 1; i++)
+        {
+            if (match_making_players_vector[i].second == 1)
+                continue;
+            for (int j = i + 1; j < match_making_players_vector.size(); j++)
+            {
+                if (match_making_players_vector[j].second == 1 || abs(match_making_players_vector[j].first->elo - match_making_players_vector[i].first->elo) > max_dif)
+                    continue;
+
+                // Pair the two compatible players
+                Player *player_a = match_making_players_vector[i].first;
+                Player *player_b = match_making_players_vector[j].first;
+
+                match_making_players_vector[i].second = 1;
+                match_making_players_vector[j].second = 1;
+
+                // thread for managing game play
+                PlayGameThreadData *game_data = new PlayGameThreadData;
+                game_data->player_a = player_a;
+                game_data->player_b = player_b;
+                game_data->initial_board = s;
+
+                pthread_t tid;
+                int thread_check = pthread_create(&tid, NULL, &play_game, game_data);
+                if (thread_check != 0)
+                {
+                    cerr << "Failed to create thread." << endl;
+                    break;
+                }
+            }
+        }
+        for (auto &element : match_making_players_vector)
+        {
+            if (!element.second)
+                match_making_players.push(element.first);
+        }
+        lock.unlock();
+
+        // // Working ...
+        // // Pair the first two players in the queue
+        // Player *player_a = match_making_players.front();
+        // match_making_players.pop();
+        // Player *player_b = match_making_players.front();
+        // match_making_players.pop();
+
+        // lock.unlock();
+
+        // // make initial board
+        // char A[9][9];
+        // create_table(A);
+        // string s = convert(A);
+        // // thread for managing game play
+        // PlayGameThreadData *game_data = new PlayGameThreadData;
+        // game_data->player_a = player_a;
+        // game_data->player_b = player_b;
+        // game_data->initial_board = s;
+
+        // pthread_t tid;
+        // int thread_check = pthread_create(&tid, NULL, &play_game, game_data);
         // if (thread_check != 0)
         // {
-        //     cerr << "Failed to join thread." << endl;
-        //     return;
+        //     cerr << "Failed to create thread." << endl;
+        //     break;
         // }
+
+        // // Wait for the game thread to finish
+        // // thread_check = pthread_join(tid, NULL);
+        // // if (thread_check != 0)
+        // // {
+        // //     cerr << "Failed to join thread." << endl;
+        // //     return;
+        // // }
     }
 }
 
@@ -1836,7 +1890,7 @@ void *play_game(void *arg)
     string s = (data->initial_board);
     (*a).round = 1;
     (*b).round = 0;
-
+    cout << "New game created between :" << a->fd << " and " << b->fd << endl;
     json responseMatchmakingData = {{"user1", {{"username", (*a).username}, {"elo", (*a).elo}}}, {"user2", {{"username", (*b).username}, {"elo", (*b).elo}}}, {"success", true}, {"message", "Match Found"}};
     if (send_respond(RespondType::MatchMaking, responseMatchmakingData, a->fd) == 0)
     {
@@ -1858,6 +1912,7 @@ void *play_game(void *arg)
     string moves_played = "";
     while (1)
     {
+        print_server_state();
         if ((*a).round == 1)
         {
             current_fd = (*a).fd;
