@@ -545,12 +545,13 @@ int main(int argc, char *argv[])
                 if (received_data["type"] == RespondType::OnlinePlayersList)
                 {
                     json online_players = received_data["data"];
-                    cout << "Online Players: ";
-                    for (json player : online_players)
-                    {
-                        cout << player["username"] << ':' << player["elo"] << endl;
-                    }
-                    cout << endl;
+                    cout << received_data["data"] << endl;
+                    // cout << "Online Players: ";
+                    // for (json player : online_players)
+                    // {
+                    //     cout << player["username"] << ':' << player["elo"] << endl;
+                    // }
+                    // cout << endl;
                 }
                 else
                 {

@@ -385,7 +385,6 @@ bool handleGetOnlinePlayersListRequest(const json &requestData, int client_fd)
         json playerJson;
         playerJson["username"] = player->username;
         playerJson["elo"] = player->elo;
-        playerJson["free"] = player->free;
         respond_type.push_back(playerJson);
     }
 
@@ -780,7 +779,7 @@ int knight(char A[9][9], char type, int sr, int sc, int dr, int dc)
             return 0;
         else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
             return 0; // outside of the board
-        if ((abs(dr - sr) == 1 || abs(dr - sr) == 2) && (abs(dc - sc) == 1 || abs(dc - sc) == 2))
+        if ((abs(dr - sr) == 1 && abs(dc - sc) == 2) || (abs(dr - sr) == 2 && abs(dc - sc) == 1))
             return 1;
         else
             return 0;
@@ -791,7 +790,7 @@ int knight(char A[9][9], char type, int sr, int sc, int dr, int dc)
             return 0;
         else if (dr > 8 || dr < 1 || dc > 8 || dc < 1)
             return 0; // outside of the board
-        if ((abs(dr - sr) == 1 || abs(dr - sr) == 2) && (abs(dc - sc) == 1 || abs(dc - sc) == 2))
+        if ((abs(dr - sr) == 1 && abs(dc - sc) == 2) || (abs(dr - sr) == 2 && abs(dc - sc) == 1))
             return 1;
         else
             return 0;
@@ -1078,6 +1077,11 @@ void copy(char B[9][9], char A[9][9])
 //     }
 //     return 0;
 // }
+bool can_move_to(char A[9][9], char type, int r, int c, int dr, int dc) // check if can move from r-c to dr-dc
+{
+
+    return false;
+}
 
 int check_mate(char A[9][9], char type)
 {
@@ -1095,7 +1099,7 @@ int check_mate(char A[9][9], char type)
                 {
                     // Temporarily move the king to see if it's still in check
                     char temp = A[i][j];
-                    A[i][j] = type == 'k' ? 'K' : 'k';
+                    A[i][j] = type;
 
                     if (!check(A, type))
                     {
@@ -1105,6 +1109,43 @@ int check_mate(char A[9][9], char type)
                     }
 
                     A[i][j] = temp; // Restore the board to its original state
+                }
+            }
+        }
+        // Check if any piece can block the check or capture the attacking piece
+        for (int i = 1; i <= 8; i++)
+        {
+            for (int j = 1; j <= 8; j++)
+            {
+                char piece = A[i][j];
+                if ((type == 'K' && is_white_piece(piece) && piece != type) || (type == 'k' && is_black_piece(piece) && piece != type))
+                {
+                    for (int r = 1; r <= 8; r++)
+                    {
+                        for (int c = 1; c <= 8; c++)
+                        {
+                            if (is_valid_move(A, piece, i, j, r, c))
+                            {
+                                // Temporarily move the piece to see if the king is still in check
+                                char temp = A[r][c];
+                                A[r][c] = piece;
+                                A[i][j] = '-';
+
+                                if (!check(A, type))
+                                {
+                                    // A piece can block the check or capture the attacking piece,
+                                    // so it's not checkmate
+                                    A[r][c] = temp; // Restore the board to its original state
+                                    cout << "this " << piece << '-' << i << ':' << j << ':' << r << ':' << c << ':' << endl;
+
+                                    return 0;
+                                }
+
+                                A[r][c] = temp; // Restore the board to its original state
+                                A[i][j] = piece;
+                            }
+                        }
+                    }
                 }
             }
         }
