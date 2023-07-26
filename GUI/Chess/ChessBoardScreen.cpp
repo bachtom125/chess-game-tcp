@@ -33,10 +33,21 @@ ChessBoardScreen::ChessBoardScreen(sf::RenderWindow& window, TcpClient& tcpClien
     opponentText.setPosition(window.getSize().x - 240, 30 ); // Adjust the position as needed
     opponentText.setFillColor(sf::Color::White);
     opponentText.setString("Waiting for an opponent..."); // Update "me" with the actual player name
+
+    resignButton.setSize(sf::Vector2f(200, 50));
+    resignButton.setPosition(100, 550);
+    resignButton.setFillColor(sf::Color::White);
+
+
+    resignButtonText.setFont(font);
+    resignButtonText.setString("Resign");
+    resignButtonText.setCharacterSize(20);
+    resignButtonText.setFillColor(sf::Color::Black);
+    resignButtonText.setPosition(110, 560);
 }
 
 void ChessBoardScreen::init() {
-    board = {
+    int initioalBoard[8][8] = {
     {-1, -2, -3, -4, -5, -3, -2, -1},
     {-6, -6, -6, -6, -6, -6, -6, -6},
     {0, 0, 0, 0, 0, 0, 0, 0},
@@ -46,6 +57,22 @@ void ChessBoardScreen::init() {
     {6, 6, 6, 6, 6, 6, 6, 6},
     {1, 2, 3, 4, 5, 3, 2, 1}
     };
+
+    int i, j, k = 0;
+    for (i = 0; i < 8; i++)
+    {
+        for (j = 0; j < 8; j++)
+        {
+            board[i][j] = initioalBoard[i][j];
+        }
+    
+    }
+    opponentText.setString("Waiting for an opponent..."); // Update "me" with the actual player name
+    loadPosition();
+    isMatchFound = false;
+    firstMouseRelease = true;
+    startFindingMatchMaking = false;
+
 }
 
 void ChessBoardScreen::handleEvent(const sf::Event& event)
@@ -77,6 +104,17 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
                         oldPos = f[i].getPosition();
                     }
                 }
+                // Handle resign
+                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                if (resignButton.getGlobalBounds().contains(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y)))
+                {
+                    // Go back to the main menu
+                    // Implement your logic here to switch screens or return to the main menu
+                    json requestData;
+                    requestData["move"] = "surrender";
+                    tcpClient.sendRequest(RequestType::Move, requestData);
+                }
+
             }
         }
 
@@ -141,6 +179,8 @@ void ChessBoardScreen::draw()
 
     window.draw(meText);
     window.draw(opponentText);
+    window.draw(resignButton);
+    window.draw(resignButtonText);
 
 }
 

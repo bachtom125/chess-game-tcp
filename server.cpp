@@ -22,7 +22,8 @@
 #include <sstream>
 #include <random>
 
-#define PORT 5500
+#define PORT 3000
+
 #define BUFF_SIZE 1024
 using namespace std;
 using json = nlohmann::json;
@@ -1312,7 +1313,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opp
     else
     {
         // cout << "current moves played: " << moves_played << endl;
-        if (strcmp(msg, "surrender\n") == 0)
+        if (strcmp(msg, "surrender") == 0)
         {
             moves_played += this_player.username + ":" + move_played;
             update_elo(fd, opponent_fd);

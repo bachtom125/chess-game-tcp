@@ -147,14 +147,19 @@ void ScreenManager::handleServerResponses()
             }
             else if (responseType == RespondType::GameResult) {
                 currentScreen = Screen::ResultScreen;
-                ChessBoardScreen *temp = new ChessBoardScreen(window, tcpClient);
-                chessBoardScreen = (*temp);
+                chessBoardScreen.init();
                 mainMenu.currentOption = Option_MainMenu;
                 resultScreen.gameLog = response["data"]["log"].get<std::string>();
                 resultScreen.winner = response["data"]["winner"]["username"].get<std::string>();
                 resultScreen.winnerElo = response["data"]["winner"]["elo"].get<int>();
                 resultScreen.loser = response["data"]["loser"]["username"].get<std::string>();
                 resultScreen.loserElo = response["data"]["loser"]["elo"].get<int>();
+                if (resultScreen.winner == mainMenu.user.username) {
+                    mainMenu.user.elo = resultScreen.winnerElo;
+                }
+                else {
+                    mainMenu.user.elo = resultScreen.loserElo;
+                }
             }
          }
     }
