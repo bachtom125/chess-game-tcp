@@ -22,7 +22,8 @@
 #include <sstream>
 #include <random>
 
-#define PORT 5500
+#define PORT 3000
+
 #define BUFF_SIZE 1024
 using namespace std;
 using json = nlohmann::json;
@@ -1312,7 +1313,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opp
     else
     {
         // cout << "current moves played: " << moves_played << endl;
-        if (strcmp(msg, "surrender\n") == 0)
+        if (strcmp(msg, "surrender") == 0)
         {
             moves_played += this_player.username + ":" + move_played;
             update_elo(fd, opponent_fd);
@@ -1479,13 +1480,11 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opp
 
             if ((move == 'a' && check_mate(A, 'k')) || (move == 'b' && check_mate(A, 'K')))
             {
-                cout << "Somebody won!" << endl;
                 moves_played += this_player.username + ":" + move_played;
                 update_elo(opponent_fd, fd);
                 send_result(opponent_fd, fd, moves_played);
                 return -1;
             }
-
             if (move == 'a' && check(A, 'K'))
             {
                 strcpy(msg, "Invalid move! check!");
@@ -1586,7 +1585,7 @@ int get_move(char A[9][9], int vizA[4], int vizB[4], Player this_player, int opp
             respond_type["success"] = true;
             respond_type["myTurn"] = false;
 
-            moves_played += this_player.username + ":" + move_played;
+            moves_played += this_player.username + ":" + move_played + "\n";
 
             // if (bytes && write(opponent_fd, s.c_str(), bytes) < 0)
             // {

@@ -5,6 +5,7 @@
 #include "MainMenu.hpp"
 #include "TcpClient.hpp"
 #include "ChessBoardScreen.hpp"
+#include "ResultScreen.hpp"
 #include <thread>
 #include <atomic>
 
@@ -13,7 +14,8 @@ enum class Screen
 {
     Login,
     MainMenu,
-    ChessBoardScreen
+    ChessBoardScreen,
+    ResultScreen
 };
 
 
@@ -37,6 +39,7 @@ private:
     LoginScreen loginScreen;
     MainMenu mainMenu;
     ChessBoardScreen chessBoardScreen;
+    ResultScreen resultScreen;
     Screen currentScreen;
     std::thread serverResponseThread;
 

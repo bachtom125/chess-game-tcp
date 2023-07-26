@@ -18,12 +18,14 @@ public:
     void draw();
     void receiveGameStateResponse(json response);
     void handleMatchMakingResponse(json data);
+    void init();
     bool startFindingMatchMaking = false;
     User user;
 
 private:
     bool isMatchFound = false;
     bool isMoveAllowed = false;
+    bool myTurn = true;
     std::string matchId;
 
     TcpClient& tcpClient; // TcpClient member variable
@@ -75,4 +77,6 @@ private:
     void sendMoveToServer(const std::string& move);
     void convertBoardResponse(int[8][8], std::string);
     void displayErrorMessage(const std::string& message);
+    sf::RectangleShape resignButton;
+    sf::Text resignButtonText;
 };
