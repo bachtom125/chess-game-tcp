@@ -410,6 +410,7 @@ bool handleChallengeRequest(const json &requestData, int client_fd)
     }
     string respondData(buffer.data(), bytes);
     json json_data = convert_to_json(respondData, bytes);
+
     const json &request_data = json_data["data"];
     string challenge_respond = request_data["message"];
 
@@ -1988,6 +1989,16 @@ void *match_making_system(void *arg)
     }
 }
 
+void convert_to_2dchar(char a[9][9], string s)
+{
+    int k = 0;
+    for (int i = 1; i <= 8; i++)
+    {
+        for (int j = 1; j <= 8; j++)
+            a[i][j] = s[k++];
+    }
+}
+
 void *play_game(void *arg)
 {
     char A[9][9];
@@ -2000,6 +2011,7 @@ void *play_game(void *arg)
     Player(*a) = (data->player_a);
     Player(*b) = (data->player_b);
     string s = (data->initial_board);
+    convert_to_2dchar(A, s);
     (*a).round = 1;
     (*b).round = 0;
     cout << "New game created between :" << a->fd << " and " << b->fd << endl;
