@@ -33,6 +33,46 @@ ChessBoardScreen::ChessBoardScreen(sf::RenderWindow& window, TcpClient& tcpClien
     opponentText.setPosition(window.getSize().x - 240, 30 ); // Adjust the position as needed
     opponentText.setFillColor(sf::Color::White);
     opponentText.setString("Waiting for an opponent..."); // Update "me" with the actual player name
+
+    resignButton.setSize(sf::Vector2f(200, 50));
+    resignButton.setPosition(100, 550);
+    resignButton.setFillColor(sf::Color::White);
+
+
+    resignButtonText.setFont(font);
+    resignButtonText.setString("Resign");
+    resignButtonText.setCharacterSize(20);
+    resignButtonText.setFillColor(sf::Color::Black);
+    resignButtonText.setPosition(110, 560);
+}
+
+void ChessBoardScreen::init() {
+    int initioalBoard[8][8] = {
+    {-1, -2, -3, -4, -5, -3, -2, -1},
+    {-6, -6, -6, -6, -6, -6, -6, -6},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0},
+    {6, 6, 6, 6, 6, 6, 6, 6},
+    {1, 2, 3, 4, 5, 3, 2, 1}
+    };
+
+    int i, j, k = 0;
+    for (i = 0; i < 8; i++)
+    {
+        for (j = 0; j < 8; j++)
+        {
+            board[i][j] = initioalBoard[i][j];
+        }
+    
+    }
+    opponentText.setString("Waiting for an opponent..."); // Update "me" with the actual player name
+    loadPosition();
+    isMatchFound = false;
+    firstMouseRelease = true;
+    startFindingMatchMaking = false;
+
 }
 
 void ChessBoardScreen::handleEvent(const sf::Event& event)
@@ -43,7 +83,7 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
         window.close();
     }
 
-    if(isMatchFound)
+    if(isMatchFound && myTurn)
     {
 
         // Handle events specific to the chess board screen
@@ -64,6 +104,17 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
                         oldPos = f[i].getPosition();
                     }
                 }
+                // Handle resign
+                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                if (resignButton.getGlobalBounds().contains(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y)))
+                {
+                    // Go back to the main menu
+                    // Implement your logic here to switch screens or return to the main menu
+                    json requestData;
+                    requestData["move"] = "surrender";
+                    tcpClient.sendRequest(RequestType::Move, requestData);
+                }
+
             }
         }
 
@@ -86,7 +137,7 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
                     std::cout << "Start release (possible send move) " << std::endl;
                     sendMoveToServer(moveStr);
                 }
-                f[n].setPosition(newPos);
+                // f[n].setPosition(newPos);
             }
 
             firstMouseRelease = false;
@@ -128,6 +179,8 @@ void ChessBoardScreen::draw()
 
     window.draw(meText);
     window.draw(opponentText);
+    window.draw(resignButton);
+    window.draw(resignButtonText);
 
 }
 
@@ -267,10 +320,11 @@ void ChessBoardScreen::receiveGameStateResponse(json response)
     // Process the game state response from the server
     // Update the game state, chess board, and other relevant data based on the received data
 
-
+    myTurn = response["data"]["myTurn"].get<bool>();
 
     if (response["data"]["success"].get<bool>())
     {
+
         std::string responseString = response["data"]["board"].get<std::string>();
         std::cout << "gamestate responseString: " << response["data"]["board"].get<std::string>() << std::endl;
 
