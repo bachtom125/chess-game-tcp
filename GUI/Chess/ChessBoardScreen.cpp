@@ -12,7 +12,7 @@ ChessBoardScreen::ChessBoardScreen(sf::RenderWindow& window, TcpClient& tcpClien
     for (int i = 0; i < 32; i++)
         f[i].setTexture(t1);
 
-    loadPosition();
+    loadPosition(true);
 
     // Load the font
     if (!font.loadFromFile("fonts/inter.ttf")) {
@@ -44,6 +44,18 @@ ChessBoardScreen::ChessBoardScreen(sf::RenderWindow& window, TcpClient& tcpClien
     resignButtonText.setCharacterSize(20);
     resignButtonText.setFillColor(sf::Color::Black);
     resignButtonText.setPosition(110, 560);
+
+    // Challenge Button
+    challengeButton.setSize(sf::Vector2f(200, 50));
+    challengeButton.setPosition(100, 550);
+    challengeButton.setFillColor(sf::Color::White);
+
+
+    challengeButtonText.setFont(font);
+    challengeButtonText.setString("Send Challenge");
+    challengeButtonText.setCharacterSize(20);
+    challengeButtonText.setFillColor(sf::Color::Black);
+    challengeButtonText.setPosition(110, 560);
 }
 
 void ChessBoardScreen::init() {
@@ -68,10 +80,12 @@ void ChessBoardScreen::init() {
     
     }
     opponentText.setString("Waiting for an opponent..."); // Update "me" with the actual player name
-    loadPosition();
     isMatchFound = false;
     firstMouseRelease = true;
     startFindingMatchMaking = false;
+    isInit = true;
+    isUpdatingPosition = true;
+    position = "";
 
 }
 
@@ -81,6 +95,70 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
     {
         std::cout << "close" << std::endl;
         window.close();
+    }
+
+    if (isChallengeMode && !isMatchFound)
+    {
+        if (event.type == sf::Event::MouseButtonPressed)
+        {
+            if (event.mouseButton.button == sf::Mouse::Left)
+            {
+                sf::Vector2i pos = sf::Mouse::getPosition(window) - sf::Vector2i(offset);
+                for (int i = 0; i < 32; i++)
+                {
+                    if (f[i].getGlobalBounds().contains(pos.x, pos.y))
+                    {
+                        isMove = true;
+                        n = i;
+                        dx = pos.x - f[i].getPosition().x;
+                        dy = pos.y - f[i].getPosition().y;
+                        oldPos = f[i].getPosition();
+
+                    }
+                }
+                // Handle send challenge
+                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                if (challengeButton.getGlobalBounds().contains(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y)))
+                {
+                    // Send Challenge Logic
+                    sendChallengeRequest();
+                }
+
+            }
+        }
+
+        if (event.type == sf::Event::MouseButtonReleased && n >= 0)
+        {
+            if (event.mouseButton.button == sf::Mouse::Left)
+            {
+                std::cout << "Start release (possible send move) " << std::endl;
+                isMove = false;
+                sf::Vector2i pos = sf::Mouse::getPosition(window) - sf::Vector2i(offset);
+                newPos = sf::Vector2f(size * int(pos.x / size), size * int(pos.y / size));
+
+                BoardPosition newBoardPosition = toBoardPosition(newPos);
+                BoardPosition oldBoardPosition = toBoardPosition(oldPos);
+                int pieceValue = board[oldBoardPosition.row][oldBoardPosition.col];
+                if (newBoardPosition.col < 0 || newBoardPosition.row < 0) return;
+
+                str = toChessNote(oldPos) + toChessNote(newPos);
+                std::string moveStr = toChessNote(oldPos) + " " + toChessNote(newPos);
+
+                std::cout << "new position: " << toChessNote(newPos) << std::endl;
+
+                if (oldPos != newPos)
+                {
+                    position += str + " ";
+                    board[oldBoardPosition.row][oldBoardPosition.col] = 0;
+                    board[newBoardPosition.row][newBoardPosition.col] = pieceValue;
+                    move(str);
+                }
+                std::cout << "Position: " << position << std::endl;
+
+                f[n].setPosition(newPos);
+                n = -1;
+            }
+        }
     }
 
     if(isMatchFound && myTurn)
@@ -120,7 +198,7 @@ void ChessBoardScreen::handleEvent(const sf::Event& event)
 
         if (event.type == sf::Event::MouseButtonReleased)
         {
-            if (event.mouseButton.button == sf::Mouse::Left && !firstMouseRelease)
+            if (event.mouseButton.button == sf::Mouse::Left && n>=0)
             {
                 std::cout << "Start release (possible send move) " << std::endl;
                 isMove = false;
@@ -150,7 +228,7 @@ void ChessBoardScreen::update()
 {
     meText.setString("Me: " + user.username + " " + std::to_string(user.elo)); // Update "me" with the actual player name
 
-    if (!isMatchFound && !startFindingMatchMaking)
+    if (!isMatchFound && !startFindingMatchMaking && !isChallengeMode)
     {
         // Send a request to the server to check for match found
         // For example, assuming the request type is RequestType::CheckMatchFound
@@ -160,6 +238,10 @@ void ChessBoardScreen::update()
             startFindingMatchMaking = true;
         }
 
+    }
+    if ((isMatchFound || isInit) && isUpdatingPosition) {
+        loadPosition(true);
+        isUpdatingPosition = false;
     }
 
 }
@@ -173,18 +255,31 @@ void ChessBoardScreen::draw()
         f[i].move(offset);
     for (int i = 0; i < 32; i++)
         window.draw(f[i]);
-    window.draw(f[n]);
+    if(n >= 0)
+        window.draw(f[n]);
     for (int i = 0; i < 32; i++)
      f[i].move(-offset);
 
     window.draw(meText);
-    window.draw(opponentText);
-    window.draw(resignButton);
-    window.draw(resignButtonText);
+    if(!isChallengeMode || !isMatchFound)
+    {
+        window.draw(opponentText);
+    }
+
+    if(isMatchFound)
+    {
+        window.draw(resignButton);
+        window.draw(resignButtonText);
+    }
+
+    if (!isMatchFound && isChallengeMode) {
+        window.draw(challengeButton);
+        window.draw(challengeButtonText);
+    }
 
 }
 
-void ChessBoardScreen::loadPosition()
+void ChessBoardScreen::loadPosition(bool loadTexture)
 {
     int k = 0;
     for (int i = 0; i < 8; i++)
@@ -196,7 +291,7 @@ void ChessBoardScreen::loadPosition()
                 continue;
             int x = abs(n) - 1;
             int y = n > 0 ? 0 : 1;
-            f[k].setTextureRect(sf::IntRect(size * x, size * y, size, size));
+            if(loadTexture) f[k].setTextureRect(sf::IntRect(size * x, size * y, size, size));
             f[k].setPosition(size * j, size * (7 - i));
             k++;
         }
@@ -223,6 +318,20 @@ void ChessBoardScreen::move(std::string str)
             f[i].setPosition(newPos);
     }
 
+}
+
+BoardPosition ChessBoardScreen::toBoardPosition(sf::Vector2f p)
+{
+    int boardSize = 8; // Assuming the chessboard is an 8x8 grid
+    int row = 7 - static_cast<int>(p.y / size);
+    int col = static_cast<int>(p.x / size);
+
+    if (row < 0 || row >= boardSize || col < 0 || col >= boardSize) {
+        std::cerr << "Invalid board position: (" << p.x << ", " << p.y << ")" << std::endl;
+        return { -1, -1 }; // Return an invalid position if the input is out of range
+    }
+
+    return { row, col };
 }
 
 std::string ChessBoardScreen::toChessNote(sf::Vector2f p)
@@ -261,6 +370,16 @@ bool ChessBoardScreen::sendMatchmakingRequest()
     }
 }
 
+bool ChessBoardScreen::sendChallengeRequest() {
+    if (isMatchFound || !isChallengeMode) return false;
+    json requestData;
+    requestData["opponent"] = opponent;
+    requestData["board"] = reverseConvert(board);
+    requestData["challenger"] = user.username;
+
+    return tcpClient.sendRequest(RequestType::Challenge, requestData);
+}
+
 void ChessBoardScreen::processMatchmakingResponse(const std::string& response)
 {
     // Process the matchmaking response from the server
@@ -293,7 +412,7 @@ bool containsSubstring(const std::string& str, const std::string& substring) {
     return str.find(substring) != std::string::npos;
 }
 
-void ChessBoardScreen::handleMatchMakingResponse(json response) {
+bool ChessBoardScreen::handleMatchMakingResponse(json response) {
     bool found = response["data"]["success"].get<bool>();
 
     if (found)
@@ -313,6 +432,7 @@ void ChessBoardScreen::handleMatchMakingResponse(json response) {
             meText.setString("Me: " + response["data"]["user2"]["username"].get<std::string>() + std::to_string(response["data"]["user2"]["elo"].get<int>()));
         }
     }
+    return found;
 }
 
 void ChessBoardScreen::receiveGameStateResponse(json response)
@@ -343,7 +463,7 @@ void ChessBoardScreen::receiveGameStateResponse(json response)
         }
         std::cout << std::endl;
     }
-    loadPosition();
+    isUpdatingPosition = true;
 }
 
 void ChessBoardScreen::sendMoveToServer(const std::string& move)
@@ -435,3 +555,60 @@ void ChessBoardScreen::convertBoardResponse(int a[8][8], std::string s)
     }
 }
 
+
+std::string ChessBoardScreen::reverseConvert(int a[8][8])
+{
+    std::string s = "";
+
+    for (int i = 0; i <= 7; i++)
+    {
+        for (int j = 0; j <= 7; j++)
+        {
+            switch (a[i][j])
+            {
+            case 6:
+                s.push_back('p');
+                break;
+            case -6:
+                s.push_back('P');
+                break;
+            case 5:
+                s.push_back('k');
+                break;
+            case -5:
+                s.push_back('K');
+                break;
+            case 2:
+                s.push_back('c');
+                break;
+            case -2:
+                s.push_back('C');
+                break;
+            case 1:
+                s.push_back('r');
+                break;
+            case -1:
+                s.push_back('R');
+                break;
+            case 3:
+                s.push_back('b');
+                break;
+            case -3:
+                s.push_back('B');
+                break;
+            case 4:
+                s.push_back('q');
+                break;
+            case -4:
+                s.push_back('Q');
+                break;
+            case 0:
+                s.push_back('-');
+                break;
+            default:
+                break;
+            }
+        }
+    }
+    return s;
+}

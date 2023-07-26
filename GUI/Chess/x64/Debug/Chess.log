@@ -14,7 +14,7 @@ C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Ches
           [
               T=unsigned int
           ]
-C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(98,67): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(109,67): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
           with
           [
               T=int
@@ -23,7 +23,7 @@ C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Ches
           [
               T=float
           ]
-C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(98,60): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(109,60): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
           with
           [
               T=int
@@ -32,26 +32,58 @@ C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Ches
           [
               T=float
           ]
-C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(128,70): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(137,70): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
           with
           [
               T=float
           ]
-C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(128,44): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(137,44): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
           with
           [
               T=float
           ]
-C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(200,45): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(200,35): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(240,37): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(176,67): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
+          with
+          [
+              T=int
+          ]
+          and
+          [
+              T=float
+          ]
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(176,60): warning C4244: 'argument': conversion from 'T' to 'T', possible loss of data
+          with
+          [
+              T=int
+          ]
+          and
+          [
+              T=float
+          ]
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(206,70): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
           with
           [
               T=float
           ]
-C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(240,27): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(206,44): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
           with
           [
               T=float
           ]
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(295,45): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(295,35): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(349,37): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\Chess\ChessBoardScreen.cpp(349,27): warning C4244: 'argument': conversion from 'int' to 'T', possible loss of data
+          with
+          [
+              T=float
+          ]
+  MainMenu.cpp
+  ScreenManager.cpp
+  main.cpp
+  Generating Code...
   Chess.vcxproj -> C:\Users\ACER\Documents\Network Programming\Course PRJ\TCP-Chess-master\TCP-Chess-master\GUI\x64\Debug\Chess.exe

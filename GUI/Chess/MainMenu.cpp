@@ -1,8 +1,8 @@
 #include "MainMenu.hpp"
 #include <iostream>
 #include "ScreenManager.hpp"
-MainMenu::MainMenu(sf::RenderWindow& window)
-    : window(window)
+MainMenu::MainMenu(sf::RenderWindow& window, TcpClient& tcpClient)
+    : window(window),tcpClient(tcpClient)
 {
     if (!font.loadFromFile("fonts/inter.ttf")) {
         // Handle font loading error
@@ -71,6 +71,8 @@ void MainMenu::handleEvent(const sf::Event& event)
         if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
             currentOption = Option_Challenge;
             std::cout << "Selected option: challengeText" << std::endl;
+            json requestData;
+            tcpClient.sendRequest(RequestType::GetOnlinePlayersList, requestData);
         }
     }
     else {
@@ -98,6 +100,7 @@ void MainMenu::update()
     }
     else if (currentOption == Option_Challenge) {
         // Perform actions specific to the "Random Match" option
+        activeScreen = Screen::OnlineUserListScreen;
     }
     else if (currentOption == Option_Exit) {
         // Perform actions specific to the "Online Users" option

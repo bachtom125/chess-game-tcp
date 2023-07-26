@@ -131,23 +131,29 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ChallengeScreen.cpp" />
     <ClCompile Include="ChessBoardScreen.cpp" />
     <ClCompile Include="LoginScreen.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenu.cpp" />
+    <ClCompile Include="OnlineUserListScreen.cpp" />
     <ClCompile Include="ResultScreen.cpp" />
     <ClCompile Include="ScreenManager.cpp" />
     <ClCompile Include="TcpClient.cpp" />
+    <ClCompile Include="UserEntry.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ChallengeScreen.hpp" />
     <ClInclude Include="ChessBoardScreen.hpp" />
     <ClInclude Include="Connector.hpp" />
     <ClInclude Include="LoginScreen.hpp" />
     <ClInclude Include="MainMenu.hpp" />
+    <ClInclude Include="OnlineUserListScreen.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="ResultScreen.hpp" />
     <ClInclude Include="ScreenManager.hpp" />
     <ClInclude Include="TcpClient.hpp" />
+    <ClInclude Include="UserEntry.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\16_Games\16_Games\14 Chess\stockfish.exe" />

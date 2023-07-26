@@ -1,14 +1,18 @@
 #include "ScreenManager.hpp"
 #include <iostream>
+#include <fstream>
+#include <Windows.h> 
 
 ScreenManager::ScreenManager(sf::RenderWindow& window, TcpClient& tcpClient)
     : window(window),
     tcpClient(tcpClient),
     loginScreen(window, tcpClient),
-    mainMenu(window),
+    mainMenu(window, tcpClient),
     chessBoardScreen(window, tcpClient),
     currentScreen(Screen::Login),
-    resultScreen(window)
+    resultScreen(window),
+    onlineUserListScreen(window),
+    challengeScreen(window, tcpClient)
 {
     startListeningToServerResponses();
 }
@@ -55,6 +59,13 @@ void ScreenManager::handleEvents()
         else if (currentScreen == Screen::ResultScreen) {
             resultScreen.handleEvent(event);
         }
+
+        else if (currentScreen == Screen::OnlineUserListScreen) {
+            onlineUserListScreen.handleEvent(event);
+        }
+        else if (currentScreen == Screen::ChallengeScreen) {
+            challengeScreen.handleEvent(event);
+        }
     }
 }
 
@@ -78,18 +89,38 @@ void ScreenManager::update()
         if(mainMenu.activeScreen == Screen::ChessBoardScreen) {
             currentScreen = Screen::ChessBoardScreen;
         }
+        else if (mainMenu.activeScreen == Screen::OnlineUserListScreen) {
+            currentScreen = Screen::OnlineUserListScreen;
+        }
     }
     else if (currentScreen == Screen::ChessBoardScreen) {
+        if (mainMenu.currentOption == MainMenuOption::Option_Challenge) {
+            chessBoardScreen.isChallengeMode = true;
+        }
         chessBoardScreen.update();
     }
 
     else if (currentScreen == Screen::ResultScreen) {
         resultScreen.update();
         if (resultScreen.backToMainMenu) {
-            currentScreen = Screen::MainMenu;
-            mainMenu.currentOption = MainMenuOption::Option_MainMenu;
-            mainMenu.activeScreen = Screen::MainMenu;
-            resultScreen.backToMainMenu = false;
+            getBackToMainMenuScreen();
+        }
+    }
+
+    else if (currentScreen == Screen::OnlineUserListScreen) {
+        onlineUserListScreen.update();
+        if (onlineUserListScreen.isBack) {
+            getBackToMainMenuScreen();
+        }
+        if (onlineUserListScreen.selectedUsername != "") {
+            currentScreen = Screen::ChessBoardScreen;
+            chessBoardScreen.isChallengeMode = true;
+            chessBoardScreen.opponent = onlineUserListScreen.selectedUsername;
+        }
+    }
+    else if (currentScreen == Screen::ChallengeScreen) {
+        if(!challengeScreen.isChallengeVisible()) {
+            getBackToMainMenuScreen();
         }
     }
 }
@@ -116,6 +147,16 @@ void ScreenManager::draw()
         window.display();
     }
 
+    else if (currentScreen == Screen::OnlineUserListScreen) {
+        onlineUserListScreen.draw();
+        window.display();
+    }
+    else if (currentScreen == Screen::ChallengeScreen) {
+        challengeScreen.draw();
+        window.display();
+    }
+
+
 }
 
 void ScreenManager::handleServerResponses()
@@ -139,8 +180,9 @@ void ScreenManager::handleServerResponses()
             else if (responseType == RespondType::MatchMaking)
             {
                 
-                chessBoardScreen.handleMatchMakingResponse(response);
+                bool found = chessBoardScreen.handleMatchMakingResponse(response);
                 // Handle other response types if needed
+                if (found) currentScreen = Screen::ChessBoardScreen;
             }
             else if (responseType == RespondType::Login) {
                 loginScreen.handleLoginResponse(response);
@@ -160,9 +202,38 @@ void ScreenManager::handleServerResponses()
                 else {
                     mainMenu.user.elo = resultScreen.loserElo;
                 }
+
+                writeStringToFile(response["data"]["matchId"].get<std::string>(), response["data"]["log"].get<std::string>());
+
+            }
+            else if (responseType == RespondType::OnlinePlayersList) {
+                onlineUserListScreen.receiveUserListData(response["data"]);
+            }
+            else if (responseType == RespondType::Challenge) {
+                if (response["data"].contains("success")) {
+                    if(response["data"]["success"].get<bool>() == false)
+                    {
+                        getBackToMainMenuScreen();
+                        continue;
+                    }
+                }
+                challengeScreen.showChallenge(response["data"]["challenger"].get<std::string>());
+                currentScreen = Screen::ChallengeScreen;
             }
          }
     }
+}
+
+void ScreenManager::getBackToMainMenuScreen() {
+    currentScreen = Screen::MainMenu;
+    mainMenu.currentOption = MainMenuOption::Option_MainMenu;
+    mainMenu.activeScreen = Screen::MainMenu;
+    onlineUserListScreen.selectedUsername = "";
+    chessBoardScreen.init();
+    onlineUserListScreen.isBack = false;
+    resultScreen.backToMainMenu = false;
+
+
 }
 
 void ChessBoardScreen::displayErrorMessage(const std::string& message)
@@ -199,4 +270,35 @@ void ScreenManager::stopListeningToServerResponses()
     {
         serverResponseThread.join();
     }
+}
+
+bool ScreenManager::writeStringToFile(const std::string& filename, const std::string& content)
+{
+    std::string folderPath = "gamelog";
+
+    // Create the folder if it doesn't exist
+    if (!CreateDirectoryA(folderPath.c_str(), nullptr) && GetLastError() != ERROR_ALREADY_EXISTS)
+    {
+        std::cerr << "Error creating folder: " << folderPath << std::endl;
+        return false;
+    }
+
+    std::string filePath = folderPath + "\\" + filename + ".txt";
+    std::ofstream outputFile(filePath);
+
+    if (!outputFile)
+    {
+        std::cerr << "Error opening file: " << filePath << std::endl;
+        return false;
+    }
+
+    outputFile << content;
+
+    if (!outputFile)
+    {
+        std::cerr << "Error writing to file: " << filePath << std::endl;
+        return false;
+    }
+
+    return true;
 }

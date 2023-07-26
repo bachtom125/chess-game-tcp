@@ -6,6 +6,8 @@
 #include "TcpClient.hpp"
 #include "ChessBoardScreen.hpp"
 #include "ResultScreen.hpp"
+#include "OnlineUserListScreen.hpp"
+#include "ChallengeScreen.hpp"
 #include <thread>
 #include <atomic>
 
@@ -15,7 +17,9 @@ enum class Screen
     Login,
     MainMenu,
     ChessBoardScreen,
-    ResultScreen
+    ResultScreen,
+    OnlineUserListScreen,
+    ChallengeScreen
 };
 
 
@@ -40,6 +44,8 @@ private:
     MainMenu mainMenu;
     ChessBoardScreen chessBoardScreen;
     ResultScreen resultScreen;
+    OnlineUserListScreen onlineUserListScreen;
+    ChallengeScreen challengeScreen;
     Screen currentScreen;
     std::thread serverResponseThread;
 
@@ -47,4 +53,6 @@ private:
 
     void startListeningToServerResponses();
     void stopListeningToServerResponses();
+    bool writeStringToFile(const std::string& filename, const std::string& content);
+    void getBackToMainMenuScreen();
 };

@@ -24,7 +24,7 @@
 
 #define PORT 3000
 
-#define BUFF_SIZE 10
+#define BUFF_SIZE 1024
 using namespace std;
 using json = nlohmann::json;
 const string DELIMITER = "-|";
@@ -393,7 +393,7 @@ bool handleChallengeRequest(const json &requestData, int client_fd)
     respond_type["challenger"] = challenger_username;
     respond_type["board"] = board;
 
-    if (send_request(RequestType::Challenge, respond_type, opponent_fd) == 0)
+    if (send_respond(RespondType::Challenge, respond_type, opponent_fd) == 0)
     {
         cout << "Failed to send out challenge to " << opponent_fd << endl;
         disconnect_player(opponent_fd);
@@ -439,7 +439,7 @@ bool handleChallengeRequest(const json &requestData, int client_fd)
         respond_type["message"] = opponent_username + " rejected your challenge!";
         respond_type["success"] = false;
 
-        if (send_request(RequestType::Challenge, respond_type, client_fd) == 0)
+        if (send_respond(RespondType::Challenge, respond_type, client_fd) == 0)
         {
             cout << "Failed to send out challenge respond to " << client_fd << endl;
             disconnect_player(client_fd);
